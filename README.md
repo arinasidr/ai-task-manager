@@ -15,12 +15,6 @@ uvicorn ai_task_manager.api.app:app --reload   # API: http://127.0.0.1:8000/docs
 atm health                     # CLI: проверить, что API запущен
 ```
 
-## Зависимости
-
-Список лежит в `requirements.txt` (основные) и `requirements-dev.txt` (плюс pytest и ruff); `pyproject.toml` дублирует его для сборки пакета. При добавлении библиотеки правьте оба места.
-
-Версии в файлах заданы нижними границами, поэтому у разных людей могут оказаться разные версии. Чтобы зафиксировать одинаковые, после рабочей установки: `pip freeze > requirements.lock`, закоммитить и ставить через `pip install -r requirements.lock`.
-
 ## Структура
 
 ```
@@ -38,8 +32,3 @@ tests/               pytest
 benchmarks/          эталонные запросы (cases.jsonl) и скрипт бенчмарка LLM
 requirements.md      ТЗ
 ```
-
-## Работа в команде
-
-- `main` — только рабочий код; изменения идут через ветки (`feat/...`, `docs/...`) и Pull Request.
-- Перед коммитом: `ruff format . && ruff check . && pytest`. Те же проверки запускает CI на каждый push и PR.
