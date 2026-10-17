@@ -6,7 +6,7 @@ git clone https://github.com/arinasidr/ai-task-manager.git
 cd ai-task-manager
 python -m venv .venv
 .venv\Scripts\activate          # Windows; macOS/Linux: source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 copy .env.example .env         # macOS/Linux: cp .env.example .env
 pytest                         # тесты
 ruff check .                   # линтер
