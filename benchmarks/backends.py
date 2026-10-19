@@ -158,6 +158,7 @@ class OllamaBackend:
             finish_reason=data.get("done_reason"),
         )
 
+    
     def memory(self) -> dict[str, Any] | None:
         """Сколько памяти занимает загруженная модель (по данным /api/ps)."""
         try:
@@ -165,8 +166,11 @@ class OllamaBackend:
             _raise_for_status(response)
         except (httpx.HTTPError, BackendError):
             return None
+
+        names = {self.model, f"{self.model}:latest"}
+
         for item in response.json().get("models") or []:
-            if item.get("name") == self.model or item.get("model") == self.model:
+            if item.get("name") in names or item.get("model") in names:
                 size = item.get("size") or 0
                 vram = item.get("size_vram") or 0
                 return {
@@ -241,6 +245,9 @@ class OpenAIBackend:
             "temperature": s.temperature,
             "seed": s.seed,
             "max_tokens": s.num_predict,
+            "chat_template_kwargs": {
+                "enable_thinking": s.think == "on"
+            },
         }
         if s.format_mode == "schema":
             payload["response_format"] = {
