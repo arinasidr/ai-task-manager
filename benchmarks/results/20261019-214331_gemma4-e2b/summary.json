@@ -1,0 +1,320 @@
+{
+  "runs": 90,
+  "cases": 30,
+  "accuracy": 0.467,
+  "mean_score": 0.792,
+  "json_parsed_rate": 1.0,
+  "json_strict_rate": 1.0,
+  "schema_valid_rate": 1.0,
+  "errors": 0,
+  "truncated": 0,
+  "critical_failures": 21,
+  "critical_details": [
+    {
+      "case_id": "TEST_14",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_15",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_16",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 0,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_14",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_15",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_16",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 1,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_14",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_15",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_16",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 2,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    }
+  ],
+  "by_category": {
+    "ambiguity": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.25
+    },
+    "confirmation": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.938
+    },
+    "datetime_edge_cases": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.428
+    },
+    "datetime_extraction": {
+      "runs": 9,
+      "accuracy": 0.667,
+      "mean_score": 0.944
+    },
+    "hallucination": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.75
+    },
+    "invalid_task_reference": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.8
+    },
+    "memory": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.8
+    },
+    "planning": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.833
+    },
+    "priority_edge_cases": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.833
+    },
+    "priority_extraction": {
+      "runs": 6,
+      "accuracy": 1.0,
+      "mean_score": 1.0
+    },
+    "safety": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "task_dependencies": {
+      "runs": 12,
+      "accuracy": 1.0,
+      "mean_score": 1.0
+    },
+    "task_extraction": {
+      "runs": 9,
+      "accuracy": 0.667,
+      "mean_score": 0.917
+    },
+    "task_modification": {
+      "runs": 9,
+      "accuracy": 0.333,
+      "mean_score": 0.778
+    }
+  },
+  "latency_s": {
+    "mean": 2.19,
+    "median": 2.0,
+    "p90": 3.32,
+    "max": 4.71
+  },
+  "gen_tokens_per_s": 63.5,
+  "prompt_tokens_per_s": 11232.6,
+  "mean_output_tokens": 129.9,
+  "failed_cases": [
+    "TEST_03",
+    "TEST_06",
+    "TEST_13",
+    "TEST_14",
+    "TEST_15",
+    "TEST_16",
+    "TEST_17",
+    "TEST_20",
+    "TEST_21",
+    "TEST_22",
+    "TEST_23",
+    "TEST_24",
+    "TEST_26",
+    "TEST_28",
+    "TEST_29",
+    "TEST_30"
+  ],
+  "consistency": {
+    "same_verdict_rate": 1.0,
+    "same_answer_rate": 1.0
+  },
+  "model": "gemma4:e2b",
+  "status": "completed",
+  "engine": {
+    "engine": "ollama",
+    "engine_version": "0.40.6",
+    "family": "gemma4",
+    "parameter_size": "4.6B",
+    "quantization": "Q4_K_M",
+    "format": "gguf",
+    "capabilities": [
+      "completion",
+      "vision",
+      "audio",
+      "tools",
+      "thinking"
+    ]
+  },
+  "machine": {
+    "label": "ASUS",
+    "system": "Windows 11",
+    "arch": "AMD64",
+    "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 16,
+    "ram_gb": 15.6,
+    "python": "3.12.6"
+  },
+  "settings": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 1024,
+    "format_mode": "schema",
+    "think": "off",
+    "timeout": 300.0
+  },
+  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
+  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
+  "scoring_version": 2,
+  "warmup": {
+    "latency_s": 14.99,
+    "load_s": 13.0720856
+  },
+  "memory": {
+    "size_gb": 0.29,
+    "size_vram_gb": 0.29,
+    "gpu_share": 1.0,
+    "context_length": 4096
+  },
+  "finished_at": "2026-10-19T21:47:03",
+  "results_dir": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\results\\20261019-214331_gemma4-e2b"
+}

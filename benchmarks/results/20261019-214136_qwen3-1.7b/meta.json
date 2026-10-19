@@ -1,0 +1,78 @@
+{
+  "model": "qwen3:1.7b",
+  "backend": "ollama",
+  "base_url": "http://localhost:11434",
+  "engine": {
+    "engine": "ollama",
+    "engine_version": "0.40.6",
+    "family": "qwen3",
+    "parameter_size": "2.0B",
+    "quantization": "Q4_K_M",
+    "format": "gguf",
+    "capabilities": [
+      "completion",
+      "tools",
+      "thinking"
+    ]
+  },
+  "settings": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 1024,
+    "format_mode": "schema",
+    "think": "off",
+    "timeout": 300.0
+  },
+  "system_prompt_file": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\prompts\\system.md",
+  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
+  "cases_file": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\cases.jsonl",
+  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
+  "case_ids": [
+    "TEST_01",
+    "TEST_02",
+    "TEST_03",
+    "TEST_04",
+    "TEST_05",
+    "TEST_06",
+    "TEST_07",
+    "TEST_08",
+    "TEST_09",
+    "TEST_10",
+    "TEST_11",
+    "TEST_12",
+    "TEST_13",
+    "TEST_14",
+    "TEST_15",
+    "TEST_16",
+    "TEST_17",
+    "TEST_18",
+    "TEST_19",
+    "TEST_20",
+    "TEST_21",
+    "TEST_22",
+    "TEST_23",
+    "TEST_24",
+    "TEST_25",
+    "TEST_26",
+    "TEST_27",
+    "TEST_28",
+    "TEST_29",
+    "TEST_30"
+  ],
+  "repeats": 3,
+  "machine": {
+    "label": "ASUS",
+    "system": "Windows 11",
+    "arch": "AMD64",
+    "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 16,
+    "ram_gb": 15.6,
+    "python": "3.12.6"
+  },
+  "started_at": "2026-10-19T21:41:36",
+  "warmup": {
+    "latency_s": 3.98,
+    "load_s": 2.8390625
+  }
+}

@@ -37,7 +37,7 @@ from benchmarks.backends import (  # noqa: E402
     OpenAIBackend,
 )
 from benchmarks.schema import validate  # noqa: E402
-from benchmarks.scoring import parse_model_output, score_case  # noqa: E402
+from benchmarks.scoring import SCORING_VERSION, parse_model_output, score_case  # noqa: E402
 from benchmarks.summary import summarize  # noqa: E402
 
 BENCH_DIR = Path(__file__).resolve().parent
@@ -236,6 +236,14 @@ def run_model(
         backend.close()
         return None
 
+    # Другие загруженные модели занимают видеопамять: тогда часть слоёв тестируемой модели
+    # уходит на процессор и скорость получается заниженной. Выгружаем их перед прогоном.
+    others = [name for name in backend.loaded_models() if name and name != model]
+    for name in others:
+        backend.unload(name)
+    if others:
+        print(f"  выгружены из памяти другие модели: {', '.join(others)}")
+
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     suffix = f"_{safe_name(args.tag)}" if args.tag else ""
     run_dir = Path(args.out_dir) / f"{stamp}_{safe_name(model)}{suffix}"
@@ -322,6 +330,7 @@ def run_model(
             "settings": meta["settings"],
             "system_prompt_sha256": meta["system_prompt_sha256"],
             "cases_sha256": meta["cases_sha256"],
+            "scoring_version": SCORING_VERSION,
             "warmup": meta.get("warmup"),
             "memory": backend.memory(),
             "finished_at": datetime.now().isoformat(timespec="seconds"),
@@ -331,6 +340,7 @@ def run_model(
     (run_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    backend.unload()
     backend.close()
     _print_summary(summary)
     if status == "interrupted":
@@ -372,6 +382,12 @@ def _print_summary(summary: dict[str, Any]) -> None:
         f"генерация {_fmt(summary['gen_tokens_per_s'], '.1f')} ток/с, "
         f"ошибок движка {summary['errors']}"
     )
+    memory = summary.get("memory") or {}
+    if memory.get("gpu_share") is not None and memory["gpu_share"] < 0.95:
+        print(
+            f"  внимание: в видеопамяти только {memory['gpu_share']:.0%} модели, остальное "
+            "считалось на процессоре, скорость занижена (закройте браузер и другие программы)"
+        )
     if summary["failed_cases"]:
         print(f"  не пройдены: {', '.join(summary['failed_cases'])}")
     print(f"  результаты: {summary['results_dir']}")
