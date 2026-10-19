@@ -167,12 +167,32 @@ class OllamaBackend:
             return None
         for item in response.json().get("models") or []:
             if item.get("name") == self.model or item.get("model") == self.model:
+                size = item.get("size") or 0
+                vram = item.get("size_vram") or 0
                 return {
-                    "size_gb": round((item.get("size") or 0) / 1024**3, 2),
-                    "size_vram_gb": round((item.get("size_vram") or 0) / 1024**3, 2),
+                    "size_gb": round(size / 1024**3, 2),
+                    "size_vram_gb": round(vram / 1024**3, 2),
+                    # доля модели в видеопамяти: меньше 1 — часть слоёв считается на процессоре
+                    "gpu_share": round(vram / size, 2) if size else None,
                     "context_length": item.get("context_length"),
                 }
         return None
+
+    def loaded_models(self) -> list[str]:
+        """Модели, которые уже загружены в Ollama и занимают память."""
+        try:
+            response = self.client.get("/api/ps")
+            _raise_for_status(response)
+        except (httpx.HTTPError, BackendError):
+            return []
+        return [item.get("name") for item in response.json().get("models") or []]
+
+    def unload(self, model: str | None = None) -> None:
+        """Выгружает модель из памяти, чтобы следующая модель получила всю видеопамять."""
+        try:
+            self.client.post("/api/generate", json={"model": model or self.model, "keep_alive": 0})
+        except httpx.HTTPError:
+            pass
 
     def close(self) -> None:
         self.client.close()
@@ -263,6 +283,12 @@ class OpenAIBackend:
         )
 
     def memory(self) -> dict[str, Any] | None:
+        return None
+
+    def loaded_models(self) -> list[str]:
+        return []
+
+    def unload(self, model: str | None = None) -> None:
         return None
 
     def close(self) -> None:

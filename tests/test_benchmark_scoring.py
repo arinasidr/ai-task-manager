@@ -212,3 +212,13 @@ def test_schema_rejects_bad_answer() -> None:
     assert "fly_to_moon" in joined
     assert "requires_confirmation" in joined
     assert "extra" in joined
+
+
+def test_ids_in_create_task_are_not_hallucination() -> None:
+    # модели нумеруют новые задачи в ordered_task_ids — при создании это поле не читается
+    case = CASES_BY_ID["TEST_02"]
+    answer = complete(case["expected"])
+    answer["ordered_task_ids"] = [1, 2]
+    result = score_case(case, answer)
+    assert result.passed
+    assert result.critical_failures == []

@@ -188,3 +188,46 @@ def test_compare_renders_tables(tmp_path: Path) -> None:
 def test_repeats_must_be_positive(value: str) -> None:
     with pytest.raises(SystemExit):
         run.parse_args(["--model", "m", "--repeats", value])
+
+
+def test_models_are_unloaded_before_and_after_run(tmp_path: Path) -> None:
+    fake = FakeOllama()
+    unloaded: list[str] = []
+    original = fake.__call__
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/ps":
+            return httpx.Response(200, json={"models": [{"name": "other:7b", "size": 1}]})
+        if request.url.path == "/api/generate":
+            unloaded.append(json.loads(request.content)["model"])
+            return httpx.Response(200, json={"done": True})
+        return original(request)
+
+    args = run.parse_args(["--model", "fake:1b", "--out-dir", str(tmp_path), "--only", "TEST_01"])
+    backend = OllamaBackend(
+        "http://ollama.test",
+        "fake:1b",
+        GenerationSettings(),
+        transport=httpx.MockTransport(handler),
+    )
+    run.run_model("fake:1b", args, CASES[:1], "prompt", "", backend=backend)
+    assert unloaded == ["other:7b", "fake:1b"]
+
+
+def test_rescore_keeps_timings_and_updates_version(tmp_path: Path) -> None:
+    from benchmarks import rescore
+    from benchmarks.scoring import SCORING_VERSION
+
+    summary = _run(tmp_path, FakeOllama(broken={"TEST_05"}), "--only", "TEST_01,TEST_05")
+    run_dir = Path(summary["results_dir"])
+    path = run_dir / "summary.json"
+    data = json.loads(path.read_text("utf-8"))
+    data["scoring_version"] = 1
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    assert rescore.main([str(run_dir)]) == 0
+    new = json.loads(path.read_text("utf-8"))
+    assert new["scoring_version"] == SCORING_VERSION
+    assert new["accuracy"] == 0.5
+    assert new["gen_tokens_per_s"] == summary["gen_tokens_per_s"]
+    assert new["machine"]["label"] == "CI"

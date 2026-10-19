@@ -53,6 +53,14 @@ def _num(value: float | None, digits: int = 1) -> str:
     return "-" if value is None else f"{value:.{digits}f}"
 
 
+def _gpu_share(memory: dict[str, Any]) -> float | None:
+    if memory.get("gpu_share") is not None:
+        return memory["gpu_share"]
+    if memory.get("size_gb"):
+        return round((memory.get("size_vram_gb") or 0) / memory["size_gb"], 2)
+    return None
+
+
 def _table(header: list[str], rows: list[list[str]]) -> str:
     lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
     lines += ["| " + " | ".join(row) + " |" for row in rows]
@@ -65,6 +73,14 @@ def render(summaries: list[dict[str, Any]]) -> str:
 
     ordered = sorted(summaries, key=lambda s: (-(s.get("accuracy") or 0), s.get("model") or ""))
     parts = ["# Сравнение моделей на cases.jsonl", ""]
+
+    versions = {s.get("scoring_version", 1) for s in ordered}
+    if len(versions) > 1:
+        parts += [
+            "> Внимание: прогоны оценены разными версиями правил "
+            f"({sorted(versions)}). Выполните python -m benchmarks.rescore.",
+            "",
+        ]
 
     prompts = {s.get("system_prompt_sha256", "")[:12] for s in ordered}
     cases = {s.get("cases_sha256", "")[:12] for s in ordered}
@@ -91,6 +107,7 @@ def render(summaries: list[dict[str, Any]]) -> str:
                 _pct(s.get("json_strict_rate")),
                 _pct(s.get("schema_valid_rate")),
                 str(s.get("critical_failures", 0)),
+                _pct((s.get("consistency") or {}).get("same_answer_rate")),
                 str(s.get("runs")),
             ]
         )
@@ -108,6 +125,7 @@ def render(summaries: list[dict[str, Any]]) -> str:
                 "Чистый JSON",
                 "Схема",
                 "Крит. ошибки",
+                "Стабильность",
                 "Прогонов",
             ],
             quality_rows,
@@ -136,9 +154,9 @@ def render(summaries: list[dict[str, Any]]) -> str:
                 _num(latency.get("median")),
                 _num(latency.get("p90")),
                 _num(s.get("gen_tokens_per_s")),
-                _num(s.get("prompt_tokens_per_s")),
                 _num(warmup.get("load_s")),
                 _num(memory.get("size_gb")),
+                _pct(_gpu_share(memory)),
                 str(s.get("errors", 0)),
             ]
         )
@@ -152,9 +170,9 @@ def render(summaries: list[dict[str, Any]]) -> str:
                 "Задержка, медиана, с",
                 "p90, с",
                 "Генерация, ток/с",
-                "Промпт, ток/с",
                 "Загрузка, с",
                 "Память, ГБ",
+                "На GPU",
                 "Ошибки",
             ],
             speed_rows,
@@ -169,14 +187,18 @@ def render(summaries: list[dict[str, Any]]) -> str:
     ]
     if failed:
         parts += ["## Непройденные тесты", "", *failed, ""]
-    critical = [
-        f"- **{s['model']}**: "
-        + "; ".join(
-            f"{item['case_id']} ({', '.join(item['fields'])})" for item in s["critical_details"]
-        )
-        for s in ordered
-        if s.get("critical_details")
-    ]
+    critical = []
+    for s in ordered:
+        counts: dict[tuple[str, tuple[str, ...]], int] = {}
+        for item in s.get("critical_details") or []:
+            key = (item["case_id"], tuple(item["fields"]))
+            counts[key] = counts.get(key, 0) + 1
+        if counts:
+            entries = [
+                f"{case} ({', '.join(fields)})" + (f" ×{n}" if n > 1 else "")
+                for (case, fields), n in sorted(counts.items())
+            ]
+            critical.append(f"- **{s['model']}**: " + "; ".join(entries))
     if critical:
         parts += ["## Критичные ошибки", "", *critical, ""]
     return "\n".join(parts)

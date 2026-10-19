@@ -1,0 +1,216 @@
+{
+  "runs": 90,
+  "cases": 30,
+  "accuracy": 0.267,
+  "mean_score": 0.683,
+  "json_parsed_rate": 0.967,
+  "json_strict_rate": 0.967,
+  "schema_valid_rate": 0.967,
+  "errors": 0,
+  "truncated": 3,
+  "critical_failures": 6,
+  "critical_details": [
+    {
+      "case_id": "TEST_26",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation"
+      ]
+    }
+  ],
+  "by_category": {
+    "ambiguity": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.5
+    },
+    "confirmation": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.812
+    },
+    "datetime_edge_cases": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.561
+    },
+    "datetime_extraction": {
+      "runs": 9,
+      "accuracy": 0.333,
+      "mean_score": 0.889
+    },
+    "hallucination": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.875
+    },
+    "invalid_task_reference": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "memory": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "planning": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.25
+    },
+    "priority_edge_cases": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.333
+    },
+    "priority_extraction": {
+      "runs": 6,
+      "accuracy": 1.0,
+      "mean_score": 1.0
+    },
+    "safety": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "task_dependencies": {
+      "runs": 12,
+      "accuracy": 0.25,
+      "mean_score": 0.745
+    },
+    "task_extraction": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.435
+    },
+    "task_modification": {
+      "runs": 9,
+      "accuracy": 0.667,
+      "mean_score": 0.944
+    }
+  },
+  "latency_s": {
+    "mean": 9.55,
+    "median": 5.68,
+    "p90": 12.57,
+    "max": 61.75
+  },
+  "gen_tokens_per_s": 20.2,
+  "prompt_tokens_per_s": 6472.6,
+  "mean_output_tokens": 173.1,
+  "failed_cases": [
+    "TEST_01",
+    "TEST_02",
+    "TEST_03",
+    "TEST_04",
+    "TEST_06",
+    "TEST_10",
+    "TEST_11",
+    "TEST_14",
+    "TEST_15",
+    "TEST_16",
+    "TEST_17",
+    "TEST_18",
+    "TEST_20",
+    "TEST_21",
+    "TEST_22",
+    "TEST_23",
+    "TEST_24",
+    "TEST_25",
+    "TEST_26",
+    "TEST_28",
+    "TEST_29",
+    "TEST_30"
+  ],
+  "consistency": {
+    "same_verdict_rate": 1.0,
+    "same_answer_rate": 1.0
+  },
+  "model": "ministral-3:3b",
+  "status": "completed",
+  "engine": {
+    "engine": "ollama",
+    "engine_version": "0.40.6",
+    "family": "mistral3",
+    "parameter_size": "3.8B",
+    "quantization": "Q4_K_M",
+    "format": "gguf",
+    "capabilities": [
+      "completion",
+      "vision",
+      "tools"
+    ]
+  },
+  "machine": {
+    "label": "ASUS",
+    "system": "Windows 11",
+    "arch": "AMD64",
+    "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 16,
+    "ram_gb": 15.6,
+    "python": "3.12.6"
+  },
+  "settings": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 1024,
+    "format_mode": "schema",
+    "think": "off",
+    "timeout": 300.0
+  },
+  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
+  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
+  "scoring_version": 2,
+  "warmup": {
+    "latency_s": 10.88,
+    "load_s": 5.9551729
+  },
+  "memory": {
+    "size_gb": 2.89,
+    "size_vram_gb": 1.51,
+    "gpu_share": 0.52,
+    "context_length": 4096
+  },
+  "finished_at": "2026-10-19T22:01:36",
+  "results_dir": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\results\\20261019-214706_ministral-3-3b"
+}

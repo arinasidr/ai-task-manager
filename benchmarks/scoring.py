@@ -24,6 +24,11 @@ from typing import Any
 
 TITLE_THRESHOLD = 0.8
 
+# Версия правил оценки. Меняется при любом изменении проверок, пишется в результаты,
+# чтобы не сравнивать прогоны, оценённые по-разному (пересчёт: python -m benchmarks.rescore).
+# 1 — первая версия; 2 — для create_task поля с ID существующих задач не считаются выдумкой.
+SCORING_VERSION = 2
+
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 _FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE)
 _PUNCT_RE = re.compile(r"[«»\"'“”„.,!?:;()\[\]]")
@@ -400,7 +405,14 @@ def referenced_ids(output: dict[str, Any]) -> set[int]:
 
 
 def _check_invented_ids(case: dict[str, Any], output: dict[str, Any]) -> Check:
-    """ID из ответа должны быть в контексте, в запросе пользователя (#123) или в эталоне."""
+    """ID из ответа должны быть в контексте, в запросе пользователя (#123) или в эталоне.
+
+    Для create_task поля с ID существующих задач не проверяются: исполнитель при создании их
+    не читает, а модели часто нумеруют в них сами новые задачи (ordered_task_ids: [1, 2]).
+    Это не ссылка на несуществующую задачу и последствий не имеет.
+    """
+    if output.get("intent") == "create_task":
+        return Check("hallucination.ids", True, [], [], "для create_task не проверяется")
     context = case.get("context") or {}
     known = _collect_ids(context.get("tasks") or [])
     known |= {int(number) for number in _TASK_REF_RE.findall(case.get("input", ""))}
