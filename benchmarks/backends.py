@@ -158,7 +158,6 @@ class OllamaBackend:
             finish_reason=data.get("done_reason"),
         )
 
-    
     def memory(self) -> dict[str, Any] | None:
         """Сколько памяти занимает загруженная модель (по данным /api/ps)."""
         try:
@@ -245,9 +244,7 @@ class OpenAIBackend:
             "temperature": s.temperature,
             "seed": s.seed,
             "max_tokens": s.num_predict,
-            "chat_template_kwargs": {
-                "enable_thinking": s.think == "on"
-            },
+            "chat_template_kwargs": {"enable_thinking": s.think == "on"},
         }
         if s.format_mode == "schema":
             payload["response_format"] = {
