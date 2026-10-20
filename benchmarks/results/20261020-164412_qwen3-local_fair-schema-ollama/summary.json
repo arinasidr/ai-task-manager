@@ -1,0 +1,440 @@
+{
+  "runs": 90,
+  "cases": 30,
+  "accuracy": 0.1,
+  "mean_score": 0.598,
+  "json_parsed_rate": 1.0,
+  "json_strict_rate": 1.0,
+  "schema_valid_rate": 1.0,
+  "errors": 0,
+  "truncated": 0,
+  "critical_failures": 36,
+  "critical_details": [
+    {
+      "case_id": "TEST_11",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_14",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_15",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_16",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 0,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_23",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_25",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_27",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_11",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_14",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_15",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_16",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 1,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_23",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_25",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_27",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_11",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_14",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_15",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_16",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 2,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_23",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_25",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_27",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    }
+  ],
+  "by_category": {
+    "ambiguity": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.25
+    },
+    "confirmation": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.388
+    },
+    "datetime_edge_cases": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.428
+    },
+    "datetime_extraction": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.722
+    },
+    "hallucination": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.75
+    },
+    "invalid_task_reference": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.2
+    },
+    "memory": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "planning": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.875
+    },
+    "priority_edge_cases": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.833
+    },
+    "priority_extraction": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.917
+    },
+    "safety": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "task_dependencies": {
+      "runs": 12,
+      "accuracy": 0.0,
+      "mean_score": 0.546
+    },
+    "task_extraction": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.574
+    },
+    "task_modification": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.667
+    }
+  },
+  "latency_s": {
+    "mean": 2.69,
+    "median": 2.39,
+    "p90": 4.56,
+    "max": 7.23
+  },
+  "gen_tokens_per_s": 47.0,
+  "prompt_tokens_per_s": 11627.7,
+  "mean_output_tokens": 109.1,
+  "failed_cases": [
+    "TEST_01",
+    "TEST_02",
+    "TEST_03",
+    "TEST_04",
+    "TEST_05",
+    "TEST_06",
+    "TEST_07",
+    "TEST_09",
+    "TEST_10",
+    "TEST_11",
+    "TEST_12",
+    "TEST_13",
+    "TEST_14",
+    "TEST_15",
+    "TEST_16",
+    "TEST_18",
+    "TEST_20",
+    "TEST_21",
+    "TEST_22",
+    "TEST_23",
+    "TEST_24",
+    "TEST_25",
+    "TEST_26",
+    "TEST_27",
+    "TEST_28",
+    "TEST_29",
+    "TEST_30"
+  ],
+  "consistency": {
+    "same_verdict_rate": 1.0,
+    "same_answer_rate": 1.0
+  },
+  "model": "qwen3-local",
+  "status": "completed",
+  "engine": {
+    "engine": "ollama",
+    "engine_version": "0.40.6",
+    "family": "qwen3",
+    "parameter_size": "2.0B",
+    "quantization": "Q4_K_M",
+    "format": "gguf",
+    "capabilities": [
+      "tools",
+      "thinking",
+      "completion"
+    ]
+  },
+  "machine": {
+    "label": "MacBook-M2",
+    "system": "Darwin 23.6.0",
+    "arch": "arm64",
+    "processor": "arm",
+    "cpu_count": 8,
+    "ram_gb": 8.0,
+    "python": "3.12.14"
+  },
+  "settings": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 1024,
+    "format_mode": "schema",
+    "think": "off",
+    "timeout": 300.0
+  },
+  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
+  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
+  "scoring_version": 2,
+  "warmup": {
+    "latency_s": 6.59,
+    "load_s": 2.628322916
+  },
+  "memory": {
+    "size_gb": 1.52,
+    "size_vram_gb": 1.52,
+    "gpu_share": 1.0,
+    "context_length": 4096
+  },
+  "finished_at": "2026-10-20T16:48:20",
+  "results_dir": "/Users/si.max/ai-task-manager/benchmarks/results/20261020-164412_qwen3-local_fair-schema-ollama"
+}

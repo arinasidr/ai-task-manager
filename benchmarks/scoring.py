@@ -26,8 +26,9 @@ TITLE_THRESHOLD = 0.8
 
 # Версия правил оценки. Меняется при любом изменении проверок, пишется в результаты,
 # чтобы не сравнивать прогоны, оценённые по-разному (пересчёт: python -m benchmarks.rescore).
-# 1 — первая версия; 2 — для create_task поля с ID существующих задач не считаются выдумкой.
-SCORING_VERSION = 2
+# 1 — первая версия; 2 — ID новых задач при create_task не считаются выдумкой;
+# 3 — расширенные проверки; 4 — только необходимые проверки действия.
+SCORING_VERSION = 4
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 _FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE)
@@ -434,4 +435,19 @@ def score_case(case: dict[str, Any], output: dict[str, Any] | None) -> CaseScore
     for key, value in expected.items():
         checks.extend(_check_field(key, value, output))
     checks.append(_check_invented_ids(case, output))
+    if output.get("intent") == "update_task":
+        task_id = output.get("task_id")
+        valid_id = type(task_id) is int and task_id > 0
+        updates = output.get("updates")
+        valid_updates = isinstance(updates, dict) and bool(updates)
+        checks.extend(
+            [
+                Check("action.task_id", valid_id, critical=not valid_id),
+                Check("action.updates", valid_updates, critical=not valid_updates),
+            ]
+        )
+        if output.get("should_execute") is True and valid_id:
+            tasks = (case.get("context") or {}).get("tasks") or []
+            exists = any(isinstance(task, dict) and task.get("id") == task_id for task in tasks)
+            checks.append(Check("action.task_exists", exists, critical=not exists))
     return CaseScore(checks)

@@ -199,11 +199,18 @@ def test_extra_warnings_are_allowed_missing_are_not() -> None:
     assert not score_case(case, answer).passed
 
 
-def test_numeric_string_ids_are_accepted() -> None:
+def test_numeric_string_ids_are_rejected() -> None:
     case = CASES_BY_ID["TEST_13"]
     answer = complete(case["expected"])
     answer["task_id"] = "14"
-    assert score_case(case, answer).passed
+    assert "action.task_id" in score_case(case, answer).critical_failures
+
+
+def test_update_task_requires_id_and_updates() -> None:
+    case = CASES_BY_ID["TEST_13"]
+    answer = complete(case["expected"])
+    del answer["task_id"], answer["updates"]
+    assert {"action.task_id", "action.updates"} <= set(score_case(case, answer).critical_failures)
 
 
 def test_schema_rejects_bad_answer() -> None:
