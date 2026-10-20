@@ -1,0 +1,257 @@
+{
+  "runs": 90,
+  "cases": 30,
+  "accuracy": 0.267,
+  "mean_score": 0.774,
+  "json_parsed_rate": 1.0,
+  "json_strict_rate": 1.0,
+  "schema_valid_rate": 1.0,
+  "errors": 0,
+  "truncated": 0,
+  "critical_failures": 12,
+  "critical_details": [
+    {
+      "case_id": "TEST_20",
+      "repeat": 0,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 1,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 2,
+      "fields": [
+        "matching_tasks"
+      ]
+    },
+    {
+      "case_id": "TEST_21",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_29",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_30",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation",
+        "should_execute"
+      ]
+    }
+  ],
+  "by_category": {
+    "ambiguity": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.667
+    },
+    "confirmation": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.85
+    },
+    "datetime_edge_cases": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.428
+    },
+    "datetime_extraction": {
+      "runs": 9,
+      "accuracy": 0.333,
+      "mean_score": 0.889
+    },
+    "hallucination": {
+      "runs": 6,
+      "accuracy": 0.5,
+      "mean_score": 0.75
+    },
+    "invalid_task_reference": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.889
+    },
+    "memory": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.8
+    },
+    "planning": {
+      "runs": 6,
+      "accuracy": 0.0,
+      "mean_score": 0.458
+    },
+    "priority_edge_cases": {
+      "runs": 3,
+      "accuracy": 1.0,
+      "mean_score": 1.0
+    },
+    "priority_extraction": {
+      "runs": 6,
+      "accuracy": 1.0,
+      "mean_score": 1.0
+    },
+    "safety": {
+      "runs": 3,
+      "accuracy": 0.0,
+      "mean_score": 0.6
+    },
+    "task_dependencies": {
+      "runs": 12,
+      "accuracy": 0.25,
+      "mean_score": 0.802
+    },
+    "task_extraction": {
+      "runs": 9,
+      "accuracy": 0.667,
+      "mean_score": 0.917
+    },
+    "task_modification": {
+      "runs": 9,
+      "accuracy": 0.0,
+      "mean_score": 0.861
+    }
+  },
+  "latency_s": {
+    "mean": 9.53,
+    "median": 8.22,
+    "p90": 14.76,
+    "max": 26.58
+  },
+  "gen_tokens_per_s": 10.9,
+  "prompt_tokens_per_s": 2675.7,
+  "mean_output_tokens": 86.0,
+  "failed_cases": [
+    "TEST_03",
+    "TEST_05",
+    "TEST_06",
+    "TEST_09",
+    "TEST_10",
+    "TEST_11",
+    "TEST_12",
+    "TEST_13",
+    "TEST_14",
+    "TEST_15",
+    "TEST_16",
+    "TEST_17",
+    "TEST_18",
+    "TEST_20",
+    "TEST_21",
+    "TEST_22",
+    "TEST_23",
+    "TEST_26",
+    "TEST_27",
+    "TEST_28",
+    "TEST_29",
+    "TEST_30"
+  ],
+  "consistency": {
+    "same_verdict_rate": 1.0,
+    "same_answer_rate": 1.0
+  },
+  "model": "phi4-mini:3.8b-q4_K_M",
+  "status": "completed",
+  "engine": {
+    "engine": "ollama",
+    "engine_version": "0.40.6",
+    "family": "phi3",
+    "parameter_size": "3.8B",
+    "quantization": "Q4_K_M",
+    "format": "gguf",
+    "capabilities": [
+      "completion",
+      "tools"
+    ]
+  },
+  "machine": {
+    "label": "MacBook-M2",
+    "system": "Darwin 23.6.0",
+    "arch": "arm64",
+    "processor": "arm",
+    "cpu_count": 8,
+    "ram_gb": 8.0,
+    "python": "3.12.14"
+  },
+  "settings": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 4096,
+    "num_predict": 1024,
+    "format_mode": "schema",
+    "think": "off",
+    "timeout": 300.0
+  },
+  "system_prompt_sha256": "0060ba12ace886435a140e1dbad80a3019086e78d35c90515a32b6af0f9bce17",
+  "cases_sha256": "fa2f261087f6182d809d211fb74338a69f20cb194529b7b71816a49988fd44ce",
+  "scoring_version": 4,
+  "warmup": {
+    "latency_s": 23.76,
+    "load_s": 11.811748667
+  },
+  "memory": {
+    "size_gb": 2.89,
+    "size_vram_gb": 2.89,
+    "gpu_share": 1.0,
+    "context_length": 4096
+  },
+  "finished_at": "2026-10-20T23:05:37",
+  "results_dir": "/Users/si.max/ai-task-manager/benchmarks/results/20261020-225055_phi4-mini-3.8b-q4_K_M_candidates"
+}
