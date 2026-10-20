@@ -17,6 +17,7 @@
 - `updates` — изменения: `title`, `deadline`, `priority`, `status`, `add_dependency_ids`,
   `remove_dependency_ids`; для предпочтений — `preferred_work_time` (`morning`, `afternoon`,
   `evening`, `night`), `working_days`, `preferred_task_types`.
+- Для `update_task` всегда указывай `task_id` и непустой `updates`, даже если действие не выполняется.
 - `ordered_task_ids` — рекомендуемый порядок выполнения для `plan_tasks`.
 - `matching_tasks` — ID найденных задач для `get_tasks`; `answer_status` — `found` или `not_found`.
 - `candidate_task_ids` — подходящие задачи, из которых пользователь должен выбрать.
@@ -42,6 +43,7 @@
    «низкий приоритет» — `low`). Иначе `priority: null`.
 4. Срок: нет срока — `null`; только дата — `YYYY-MM-DD`; дата и время — ISO 8601 со смещением,
    например `2026-01-31T09:00:00+03:00`. Не добавляй время, если пользователь его не называл.
+   Для `create_task` бери приоритет и срок только из запроса, не из названия задачи или контекста.
 5. Относительные даты («завтра», «через три дня», «в пятницу») считай от `current_datetime`.
    Часовой пояс, названный в запросе, важнее `timezone`.
 6. Несуществующая дата — `clarification_required` и `invalid_date`. Время, которое в указанной
