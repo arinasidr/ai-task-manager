@@ -1,16 +1,23 @@
 {
   "runs": 90,
   "cases": 30,
-  "accuracy": 0.467,
-  "mean_score": 0.792,
+  "accuracy": 0.433,
+  "mean_score": 0.79,
   "json_parsed_rate": 1.0,
   "json_strict_rate": 1.0,
   "schema_valid_rate": 1.0,
   "errors": 0,
   "truncated": 0,
-  "critical_failures": 21,
+  "critical_failures": 30,
   "critical_details": [
     {
+      "case_id": "TEST_11",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
       "case_id": "TEST_14",
       "repeat": 0,
       "fields": [
@@ -22,7 +29,8 @@
       "case_id": "TEST_15",
       "repeat": 0,
       "fields": [
-        "should_execute"
+        "should_execute",
+        "action.task_id"
       ]
     },
     {
@@ -44,6 +52,20 @@
       "repeat": 0,
       "fields": [
         "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_23",
+      "repeat": 0,
+      "fields": [
+        "action.task_id"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 0,
+      "fields": [
+        "requires_confirmation"
       ]
     },
     {
@@ -62,6 +84,13 @@
       ]
     },
     {
+      "case_id": "TEST_11",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
       "case_id": "TEST_14",
       "repeat": 1,
       "fields": [
@@ -73,7 +102,8 @@
       "case_id": "TEST_15",
       "repeat": 1,
       "fields": [
-        "should_execute"
+        "should_execute",
+        "action.task_id"
       ]
     },
     {
@@ -95,6 +125,20 @@
       "repeat": 1,
       "fields": [
         "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_23",
+      "repeat": 1,
+      "fields": [
+        "action.task_id"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 1,
+      "fields": [
+        "requires_confirmation"
       ]
     },
     {
@@ -113,6 +157,13 @@
       ]
     },
     {
+      "case_id": "TEST_11",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
       "case_id": "TEST_14",
       "repeat": 2,
       "fields": [
@@ -124,7 +175,8 @@
       "case_id": "TEST_15",
       "repeat": 2,
       "fields": [
-        "should_execute"
+        "should_execute",
+        "action.task_id"
       ]
     },
     {
@@ -146,6 +198,20 @@
       "repeat": 2,
       "fields": [
         "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_23",
+      "repeat": 2,
+      "fields": [
+        "action.task_id"
+      ]
+    },
+    {
+      "case_id": "TEST_26",
+      "repeat": 2,
+      "fields": [
+        "requires_confirmation"
       ]
     },
     {
@@ -168,12 +234,12 @@
     "ambiguity": {
       "runs": 6,
       "accuracy": 0.0,
-      "mean_score": 0.25
+      "mean_score": 0.452
     },
     "confirmation": {
       "runs": 6,
       "accuracy": 0.5,
-      "mean_score": 0.938
+      "mean_score": 0.9
     },
     "datetime_edge_cases": {
       "runs": 9,
@@ -193,7 +259,7 @@
     "invalid_task_reference": {
       "runs": 3,
       "accuracy": 0.0,
-      "mean_score": 0.8
+      "mean_score": 0.667
     },
     "memory": {
       "runs": 3,
@@ -202,8 +268,8 @@
     },
     "planning": {
       "runs": 6,
-      "accuracy": 0.5,
-      "mean_score": 0.833
+      "accuracy": 0.0,
+      "mean_score": 0.708
     },
     "priority_edge_cases": {
       "runs": 3,
@@ -222,8 +288,8 @@
     },
     "task_dependencies": {
       "runs": 12,
-      "accuracy": 1.0,
-      "mean_score": 1.0
+      "accuracy": 0.75,
+      "mean_score": 0.95
     },
     "task_extraction": {
       "runs": 9,
@@ -232,27 +298,28 @@
     },
     "task_modification": {
       "runs": 9,
-      "accuracy": 0.333,
-      "mean_score": 0.778
+      "accuracy": 0.667,
+      "mean_score": 0.833
     }
   },
   "latency_s": {
-    "mean": 2.19,
-    "median": 2.0,
-    "p90": 3.32,
-    "max": 4.71
+    "mean": 2.31,
+    "median": 2.13,
+    "p90": 3.56,
+    "max": 5.04
   },
-  "gen_tokens_per_s": 63.5,
-  "prompt_tokens_per_s": 11232.6,
-  "mean_output_tokens": 129.9,
+  "gen_tokens_per_s": 60.1,
+  "prompt_tokens_per_s": 11149.2,
+  "mean_output_tokens": 129.5,
   "failed_cases": [
     "TEST_03",
     "TEST_06",
-    "TEST_13",
+    "TEST_11",
     "TEST_14",
     "TEST_15",
     "TEST_16",
     "TEST_17",
+    "TEST_18",
     "TEST_20",
     "TEST_21",
     "TEST_22",
@@ -302,12 +369,12 @@
     "think": "off",
     "timeout": 300.0
   },
-  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
-  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
-  "scoring_version": 2,
+  "system_prompt_sha256": "0060ba12ace886435a140e1dbad80a3019086e78d35c90515a32b6af0f9bce17",
+  "cases_sha256": "fa2f261087f6182d809d211fb74338a69f20cb194529b7b71816a49988fd44ce",
+  "scoring_version": 4,
   "warmup": {
-    "latency_s": 14.99,
-    "load_s": 13.0720856
+    "latency_s": 15.82,
+    "load_s": 14.0400126
   },
   "memory": {
     "size_gb": 0.29,
@@ -315,6 +382,6 @@
     "gpu_share": 1.0,
     "context_length": 4096
   },
-  "finished_at": "2026-10-19T21:47:03",
-  "results_dir": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\results\\20261019-214331_gemma4-e2b"
+  "finished_at": "2026-10-21T14:06:48",
+  "results_dir": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\results\\20261021-140305_gemma4-e2b"
 }

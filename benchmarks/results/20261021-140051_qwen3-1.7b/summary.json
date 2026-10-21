@@ -1,14 +1,14 @@
 {
   "runs": 90,
   "cases": 30,
-  "accuracy": 0.267,
-  "mean_score": 0.705,
+  "accuracy": 0.167,
+  "mean_score": 0.66,
   "json_parsed_rate": 1.0,
   "json_strict_rate": 1.0,
   "schema_valid_rate": 1.0,
   "errors": 0,
   "truncated": 0,
-  "critical_failures": 30,
+  "critical_failures": 36,
   "critical_details": [
     {
       "case_id": "TEST_11",
@@ -26,10 +26,24 @@
       ]
     },
     {
+      "case_id": "TEST_15",
+      "repeat": 0,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
       "case_id": "TEST_16",
       "repeat": 0,
       "fields": [
         "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 0,
+      "fields": [
+        "matching_tasks"
       ]
     },
     {
@@ -100,10 +114,24 @@
       ]
     },
     {
+      "case_id": "TEST_15",
+      "repeat": 1,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
       "case_id": "TEST_16",
       "repeat": 1,
       "fields": [
         "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 1,
+      "fields": [
+        "matching_tasks"
       ]
     },
     {
@@ -174,10 +202,24 @@
       ]
     },
     {
+      "case_id": "TEST_15",
+      "repeat": 2,
+      "fields": [
+        "should_execute"
+      ]
+    },
+    {
       "case_id": "TEST_16",
       "repeat": 2,
       "fields": [
         "should_execute"
+      ]
+    },
+    {
+      "case_id": "TEST_20",
+      "repeat": 2,
+      "fields": [
+        "matching_tasks"
       ]
     },
     {
@@ -237,12 +279,12 @@
     "ambiguity": {
       "runs": 6,
       "accuracy": 0.0,
-      "mean_score": 0.375
+      "mean_score": 0.411
     },
     "confirmation": {
       "runs": 6,
       "accuracy": 0.0,
-      "mean_score": 0.612
+      "mean_score": 0.664
     },
     "datetime_edge_cases": {
       "runs": 9,
@@ -257,12 +299,12 @@
     "hallucination": {
       "runs": 6,
       "accuracy": 0.5,
-      "mean_score": 0.875
+      "mean_score": 0.75
     },
     "invalid_task_reference": {
       "runs": 3,
       "accuracy": 0.0,
-      "mean_score": 0.4
+      "mean_score": 0.429
     },
     "memory": {
       "runs": 3,
@@ -271,8 +313,8 @@
     },
     "planning": {
       "runs": 6,
-      "accuracy": 1.0,
-      "mean_score": 1.0
+      "accuracy": 0.5,
+      "mean_score": 0.875
     },
     "priority_edge_cases": {
       "runs": 3,
@@ -292,29 +334,30 @@
     "task_dependencies": {
       "runs": 12,
       "accuracy": 0.0,
-      "mean_score": 0.615
+      "mean_score": 0.594
     },
     "task_extraction": {
       "runs": 9,
-      "accuracy": 0.667,
-      "mean_score": 0.917
+      "accuracy": 0.333,
+      "mean_score": 0.759
     },
     "task_modification": {
       "runs": 9,
-      "accuracy": 0.667,
-      "mean_score": 0.833
+      "accuracy": 0.333,
+      "mean_score": 0.667
     }
   },
   "latency_s": {
-    "mean": 1.2,
-    "median": 1.16,
-    "p90": 1.63,
-    "max": 2.73
+    "mean": 1.42,
+    "median": 1.45,
+    "p90": 2.04,
+    "max": 2.64
   },
-  "gen_tokens_per_s": 94.7,
-  "prompt_tokens_per_s": 65825.0,
+  "gen_tokens_per_s": 80.0,
+  "prompt_tokens_per_s": 58785.3,
   "mean_output_tokens": 108.7,
   "failed_cases": [
+    "TEST_02",
     "TEST_03",
     "TEST_04",
     "TEST_05",
@@ -323,9 +366,11 @@
     "TEST_09",
     "TEST_10",
     "TEST_11",
+    "TEST_12",
     "TEST_14",
     "TEST_15",
     "TEST_16",
+    "TEST_18",
     "TEST_20",
     "TEST_21",
     "TEST_22",
@@ -375,12 +420,12 @@
     "think": "off",
     "timeout": 300.0
   },
-  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
-  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
-  "scoring_version": 2,
+  "system_prompt_sha256": "0060ba12ace886435a140e1dbad80a3019086e78d35c90515a32b6af0f9bce17",
+  "cases_sha256": "fa2f261087f6182d809d211fb74338a69f20cb194529b7b71816a49988fd44ce",
+  "scoring_version": 4,
   "warmup": {
-    "latency_s": 3.98,
-    "load_s": 2.8390625
+    "latency_s": 3.84,
+    "load_s": 2.6490108
   },
   "memory": {
     "size_gb": 1.59,
@@ -388,6 +433,6 @@
     "gpu_share": 1.0,
     "context_length": 4096
   },
-  "finished_at": "2026-10-19T21:43:28",
-  "results_dir": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\results\\20261019-214136_qwen3-1.7b"
+  "finished_at": "2026-10-21T14:03:02",
+  "results_dir": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\results\\20261021-140051_qwen3-1.7b"
 }

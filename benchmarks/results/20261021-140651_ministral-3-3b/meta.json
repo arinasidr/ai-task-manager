@@ -1,20 +1,18 @@
 {
-  "model": "gemma4:e2b",
+  "model": "ministral-3:3b",
   "backend": "ollama",
   "base_url": "http://localhost:11434",
   "engine": {
     "engine": "ollama",
     "engine_version": "0.40.6",
-    "family": "gemma4",
-    "parameter_size": "4.6B",
+    "family": "mistral3",
+    "parameter_size": "3.8B",
     "quantization": "Q4_K_M",
     "format": "gguf",
     "capabilities": [
       "completion",
       "vision",
-      "audio",
-      "tools",
-      "thinking"
+      "tools"
     ]
   },
   "settings": {
@@ -27,9 +25,9 @@
     "timeout": 300.0
   },
   "system_prompt_file": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\prompts\\system.md",
-  "system_prompt_sha256": "412e6f3e0b8ec31fb853d951b89315e6e4c77593cb6cf6354d1c4a394b075af1",
+  "system_prompt_sha256": "0060ba12ace886435a140e1dbad80a3019086e78d35c90515a32b6af0f9bce17",
   "cases_file": "C:\\Users\\user\\Desktop\\ai-agents-task\\benchmarks\\cases.jsonl",
-  "cases_sha256": "d2a44b1d203cac368733f2ff1ffd8e6bccf3ba5f62e2ca3831debd72a83e3d5c",
+  "cases_sha256": "fa2f261087f6182d809d211fb74338a69f20cb194529b7b71816a49988fd44ce",
   "case_ids": [
     "TEST_01",
     "TEST_02",
@@ -72,9 +70,9 @@
     "ram_gb": 15.6,
     "python": "3.12.6"
   },
-  "started_at": "2026-10-19T21:43:31",
+  "started_at": "2026-10-21T14:06:51",
   "warmup": {
-    "latency_s": 14.99,
-    "load_s": 13.0720856
+    "latency_s": 10.24,
+    "load_s": 6.1043961
   }
 }
