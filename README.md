@@ -51,3 +51,22 @@ python -c "from ai_task_manager.db.database import init_db; init_db()"
 ```bash
 pytest tests/test_db.py
 ```
+
+## HTTP API
+
+После запуска приложения документация маршрутов доступна по адресу
+`http://127.0.0.1:8000/docs`. Таблицы SQLite создаются при запуске API.
+
+`GET` и `POST /api/v1/tasks` показывают и создают задачи.
+`GET` и `PATCH /api/v1/tasks/{id}` читают и изменяют задачу;
+`PATCH /api/v1/tasks/{id}/status` меняет её статус.
+
+`POST /api/v1/tasks/{id}/delete-request` возвращает `action_id`, не удаляя задачу.
+Действие подтверждается через `POST /api/v1/actions/{action_id}/confirm`
+или отменяется через `POST /api/v1/actions/{action_id}/cancel`.
+Подтверждение также требуется для завершения задачи с незавершёнными зависимостями.
+
+`POST /api/v1/chat` пока возвращает `503`: обработка сообщений будет подключена
+в задачах A09–A10.
+
+Проверка API: `pytest tests/test_api.py`.
