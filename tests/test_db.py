@@ -64,6 +64,29 @@ def test_task_crud_keeps_optional_fields_empty_and_updates_only_selected_id(
         assert tasks[1]["status"] == "todo"
 
 
+def test_task_crud_rejects_invalid_deadline_values(db_path: Path) -> None:
+    with closing(connect(db_path)) as connection:
+        for field, value in (
+            ("due_date", "завтра"),
+            ("due_time", "после обеда"),
+            ("due_at_utc", "когда-нибудь"),
+        ):
+            with pytest.raises(ValueError, match=field):
+                create_task(connection, "Новая", **{field: value})
+
+        task_id = create_task(connection, "Существующая", due_date="2026-10-23")
+        for field, value in (
+            ("due_date", "завтра"),
+            ("due_time", "после обеда"),
+            ("due_at_utc", "когда-нибудь"),
+        ):
+            with pytest.raises(ValueError, match=field):
+                update_task(connection, task_id, {field: value})
+
+        assert get_task(connection, task_id)["due_date"] == "2026-10-23"
+        assert list_tasks(connection)[0]["id"] == task_id
+
+
 def test_dependencies_reject_cycles_and_block_premature_completion(db_path: Path) -> None:
     with closing(connect(db_path)) as connection:
         first, second, third = (create_task(connection, title) for title in ("A", "B", "C"))

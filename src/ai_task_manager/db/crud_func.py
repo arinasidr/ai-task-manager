@@ -1,7 +1,7 @@
 import json
 import sqlite3
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 _UPDATABLE_FIELDS = {
     "title",
@@ -12,6 +12,26 @@ _UPDATABLE_FIELDS = {
     "due_timezone",
     "due_at_utc",
 }
+
+
+def _normalize_deadline_fields(values: dict[str, str | None]) -> dict[str, str | None]:
+    """Проверяет даты и время до записи в БД и сохраняет их в ISO-формате."""
+    normalized = values.copy()
+    for field, parser in (
+        ("due_date", date.fromisoformat),
+        ("due_time", time.fromisoformat),
+        ("due_at_utc", datetime.fromisoformat),
+    ):
+        value = normalized.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise ValueError(f"Поле {field} должно быть строкой в ISO-формате")
+        try:
+            normalized[field] = parser(value).isoformat()
+        except ValueError as exc:
+            raise ValueError(f"Поле {field} должно быть в ISO-формате") from exc
+    return normalized
 
 
 def get_task(connection: sqlite3.Connection, task_id: int) -> dict | None:
@@ -40,6 +60,10 @@ def create_task(
     if priority not in (None, "low", "medium", "high"):
         raise ValueError("Недопустимый приоритет")
 
+    deadline = _normalize_deadline_fields(
+        {"due_date": due_date, "due_time": due_time, "due_at_utc": due_at_utc}
+    )
+
     now = datetime.now(UTC).isoformat()
     cursor = connection.execute(
         """
@@ -53,10 +77,10 @@ def create_task(
             title.strip(),
             description,
             priority,
-            due_date,
-            due_time,
+            deadline["due_date"],
+            deadline["due_time"],
             due_timezone,
-            due_at_utc,
+            deadline["due_at_utc"],
             now,
             now,
         ),
@@ -93,6 +117,8 @@ def update_task(
     if "priority" in changes and changes["priority"] not in (None, "low", "medium", "high"):
         raise ValueError("Недопустимый приоритет")
 
+    changes = _normalize_deadline_fields(changes)
+
     assignments = ", ".join(f"{field} = ?" for field in changes)
     cursor = connection.execute(
         f"UPDATE tasks SET {assignments}, updated_at = ?, version = version + 1 WHERE id = ?",
@@ -112,19 +138,29 @@ def change_task_status(
     if status not in ("todo", "in_progress", "done"):
         raise ValueError("Недопустимый статус")
 
+    condition = ""
     if status == "done":
-        ids = get_unfinished_predecessors(connection, task_id)
-        if ids:
-            raise ValueError(f"Есть незавершённые зависимости {ids}; требуется подтверждение")
+        condition = """
+            AND NOT EXISTS (
+                SELECT 1
+                FROM task_dependencies AS d
+                JOIN tasks AS predecessor ON predecessor.id = d.predecessor_task_id
+                WHERE d.successor_task_id = tasks.id AND predecessor.status != 'done'
+            )
+        """
 
     cursor = connection.execute(
-        """
+        f"""
         UPDATE tasks
         SET status = ?, updated_at = ?, version = version + 1
-        WHERE id = ?
+        WHERE id = ? {condition}
         """,
         (status, datetime.now(UTC).isoformat(), task_id),
     )
+    if cursor.rowcount == 0 and status == "done":
+        ids = get_unfinished_predecessors(connection, task_id)
+        if ids:
+            raise ValueError(f"Есть незавершённые зависимости {ids}; требуется подтверждение")
     return cursor.rowcount == 1
 
 
