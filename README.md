@@ -25,10 +25,29 @@ src/ai_task_manager/
 ├── workflow/        граф LangGraph, общее состояние, подтверждения
 ├── tools/           Tools с строгими схемами (обычный Python)
 ├── memory/          рабочая, краткосрочная, долгосрочная память
-├── db/              SQLite: задачи, зависимости, предпочтения
+├── db/              SQLite: задачи, зависимости
 ├── observability/   логи, метрики, трейсы, алерты
 └── config.py        настройки из переменных окружения ATM_*
 tests/               pytest
 benchmarks/          эталонные запросы (cases.jsonl) и скрипт бенчмарка LLM
+data/                SQLite база данных
 requirements.md      ТЗ
+```
+
+## База данных
+
+Задачи, зависимости и операции подтверждения хранятся в SQLite.
+Путь по умолчанию — `data/tasks.db`; его можно изменить через
+`ATM_DATABASE_PATH`. Файл БД не добавляется в Git.
+
+Инициализация таблиц:
+
+```bash
+python -c "from ai_task_manager.db.database import init_db; init_db()"
+```
+
+Проверка:
+
+```bash
+pytest tests/test_db.py
 ```
