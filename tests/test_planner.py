@@ -522,10 +522,12 @@ def test_plan_serializes_to_json(db: sqlite3.Connection) -> None:
 
 def test_system_prompt_is_loaded_and_mentions_rules() -> None:
     prompt = load_system_prompt()
+    assert "# SOUL - AI Task Manager" in prompt
     assert "ordered_task_ids" in prompt
     assert "Никогда не придумывай задачи" in prompt
     # в промпте нет готового примера ответа: маленькие модели его копируют
     assert "```json" not in prompt
+    assert "## Примеры ответов пользователю" not in prompt
 
 
 @pytest.mark.parametrize("text", ['```json\n{"a": 1}\n```', '{"a": 1}'])
