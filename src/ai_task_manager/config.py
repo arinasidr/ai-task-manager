@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     database_path: str = "data/tasks.db"
     ollama_base_url: str = "http://localhost:11434"
 
+    analyst_model: str = "gemma4:e2b"
+
 
 @lru_cache
 def get_settings() -> Settings:
