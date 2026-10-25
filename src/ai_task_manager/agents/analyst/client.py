@@ -1,18 +1,13 @@
 import json
 from importlib.resources import files
 
-import httpx
+from ai_task_manager.agents.llm import JsonLLM
 
 from .schema import AnalystInput, AnalystResult
 from .validation import validate_task_references
 
 
-def analyze(
-    data: AnalystInput,
-    *,
-    model: str,
-    client: httpx.Client,
-) -> AnalystResult:
+def analyze(data: AnalystInput, *, llm: JsonLLM) -> AnalystResult:
     """Получает разбор запроса от модели и проверяет его."""
     system_prompt = (
         files("ai_task_manager")
@@ -21,22 +16,10 @@ def analyze(
     )
     user_message = json.dumps(data.model_dump(mode="json"), ensure_ascii=False)
 
-    response = client.post(
-        "/api/chat",
-        json={
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            "format": AnalystResult.model_json_schema(),
-            "stream": False,
-            "options": {"temperature": 0},
-        },
+    answer = llm.complete_json(
+        system_prompt,
+        user_message,
+        AnalystResult.model_json_schema(),
     )
-
-    response.raise_for_status()
-
-    content = response.json()["message"]["content"]
-    result = AnalystResult.model_validate_json(content)
+    result = AnalystResult.model_validate(answer)
     return validate_task_references(data, result)

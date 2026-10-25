@@ -39,6 +39,7 @@ from ai_task_manager.db.crud_func import (
     get_unfinished_predecessors,
     list_tasks,
 )
+from ai_task_manager.prompting import with_soul
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "planner.md"
 
@@ -75,7 +76,7 @@ _ANALYST_DECIDES = {"clarification_required", "unsupported"}
 
 
 def load_system_prompt() -> str:
-    return PROMPT_PATH.read_text(encoding="utf-8")
+    return with_soul(PROMPT_PATH.read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------- сроки
