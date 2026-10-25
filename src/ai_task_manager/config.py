@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
 
     analyst_model: str = "gemma4:e2b"
+    # модель планировщика (предварительный выбор A05); позже её будет выбирать роутер
+    planner_model: str = "gemma4:e2b"
+    # часовой пояс пользователя по умолчанию: сроки «на дату», сравнение сроков
+    timezone: str = "Europe/Moscow"
 
 
 @lru_cache

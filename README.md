@@ -70,3 +70,19 @@ pytest tests/test_db.py
 в задачах A09–A10.
 
 Проверка API: `pytest tests/test_api.py`.
+
+## Агенты
+
+`src/ai_task_manager/agents/`:
+- `analyst/` — агент-аналитик (A09): разбор запроса в `AnalystResult`;
+- `contracts.py` — контракты между агентами: `Analysis` (вход планировщика, принимает `AnalystResult`) и `Plan` (выход планировщика);
+- `planner.py` — агент-планировщик: действия с задачами планирует код, порядок выполнения (`plan_tasks`) — LLM с проверкой кодом;
+- `prompts/planner.md` — системный промпт планировщика;
+- `llm.py` — вызов модели Ollama со структурированным ответом (JSON Schema).
+
+Проверить планировщик на настоящей модели (нужна запущенная Ollama):
+
+```bash
+python -m ai_task_manager.agents.planner_demo                  # модель из ATM_PLANNER_MODEL
+python -m ai_task_manager.agents.planner_demo --model qwen3:1.7b
+```
