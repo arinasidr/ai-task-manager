@@ -24,7 +24,8 @@ class FakeLLM:
         self.answer = answer
 
     def complete_json(self, system: str, user: str, schema: dict[str, Any]) -> dict[str, Any]:
-        assert system.startswith("# task-extraction")
+        assert system.startswith("# SOUL - AI Task Manager")
+        assert "# task-extraction" in system
         assert json.loads(user)["request"]
         assert schema["title"] == "AnalystResult"
         return self.answer

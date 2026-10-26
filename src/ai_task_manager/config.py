@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # часовой пояс пользователя по умолчанию: сроки «на дату», сравнение сроков
     timezone: str = "Europe/Moscow"
 
+    fast_model: str = "qwen3:1.7b"
+    validator_model: str = "ministral-3:3b"
+
 
 @lru_cache
 def get_settings() -> Settings:

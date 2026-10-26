@@ -2,6 +2,7 @@ import json
 from importlib.resources import files
 
 from ai_task_manager.agents.llm import JsonLLM
+from ai_task_manager.prompting import with_soul
 
 from .schema import AnalystInput, AnalystResult
 from .validation import validate_task_references
@@ -14,6 +15,7 @@ def analyze(data: AnalystInput, *, llm: JsonLLM) -> AnalystResult:
         .joinpath("skills", "task-extraction", "SKILL.md")
         .read_text(encoding="utf-8")
     )
+    system_prompt = with_soul(system_prompt)
     user_message = json.dumps(data.model_dump(mode="json"), ensure_ascii=False)
 
     answer = llm.complete_json(
