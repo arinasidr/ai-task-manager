@@ -16,7 +16,7 @@ def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
 
 
 def init_db(db_path: str | Path | None = None) -> None:
-    """Создаёт таблицы задач, зависимостей и операций, если их ещё нет."""
+    """Создаёт таблицы задач, связей, операций и предпочтений."""
     connection = connect(db_path)
     try:
         connection.execute("""
@@ -68,6 +68,26 @@ def init_db(db_path: str | Path | None = None) -> None:
                 expires_at TEXT,
                 confirmed_at TEXT
             )
+        """)
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS preferences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kind TEXT NOT NULL CHECK (
+                    kind IN ('preferred_work_time', 'working_days', 'preferred_task_types')
+                ),
+                value_json TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (
+                    status IN ('proposed', 'confirmed', 'superseded', 'rejected')
+                ),
+                source TEXT NOT NULL CHECK (source IN ('explicit', 'inferred')),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        connection.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_preferences_confirmed_kind
+            ON preferences(kind)
+            WHERE status = 'confirmed'
         """)
         connection.commit()
     finally:

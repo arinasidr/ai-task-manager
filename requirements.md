@@ -133,7 +133,7 @@
 
 **TaskDependency:** `predecessor_task_id`, `successor_task_id`, целостность ссылок обеспечивается БД и кодом, циклы дополнительно проверяются кодом.
 
-**Preference:** `id`, `kind`, `value`, `status` (`proposed`/`confirmed`), `source` (`explicit`/`inferred`), `created_at`, `updated_at`. Разрешённые `kind`: удобное время работы, рабочие дни, предпочтительные типы задач. «Типы задач» в предпочтениях **не означают**, что у Task обязательно есть отдельное поле категории.
+**Preference:** `id`, `kind`, `value`, `status` (`proposed`/`confirmed`/`superseded`/`rejected`), `source` (`explicit`/`inferred`), `created_at`, `updated_at`. Разрешённые `kind`: удобное время работы, рабочие дни, предпочтительные типы задач. Только `confirmed` влияет на планирование; `superseded` означает замену или отмену более новым выбором, а `rejected` — явный отказ пользователя. «Типы задач» в предпочтениях **не означают**, что у Task обязательно есть отдельное поле категории.
 
 **Conversation/Agent State:** `conversation_id`, рабочие сообщения/контекст, промежуточный план и статус выполнения.
 
