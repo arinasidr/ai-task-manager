@@ -77,6 +77,8 @@ pytest tests/test_db.py
 - `contracts.py` — контракты между агентами: `Analysis` (вход планировщика, принимает `AnalystResult`) и `Plan` (выход планировщика);
 - `planner.py` — агент-планировщик: действия с задачами планирует код, порядок выполнения (`plan_tasks`) — LLM с проверкой кодом;
 - `prompts/planner.md` — системный промпт планировщика;
+- `validator.py` — агент-валидатор (P08): проверки кодом + смысловая проверка LLM другого семейства (`ministral-3:3b`); узел графа — `make_validator_node`;
+- `prompts/validator.md` — системный промпт валидатора. Промпты всех агентов начинаются с общего `prompts/SOUL.md` (`prompting.with_soul`);
 - `llm.py` — вызов модели Ollama со структурированным ответом (JSON Schema).
 
 Проверить планировщик на настоящей модели (нужна запущенная Ollama):
@@ -84,4 +86,5 @@ pytest tests/test_db.py
 ```bash
 python -m ai_task_manager.agents.planner_demo                  # модель из ATM_PLANNER_MODEL
 python -m ai_task_manager.agents.planner_demo --model qwen3:1.7b
+python -m ai_task_manager.agents.validator_demo                 # модель из ATM_VALIDATOR_MODEL
 ```
