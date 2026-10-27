@@ -1,5 +1,12 @@
 from typing import Any, Literal, NotRequired, TypedDict
 
+
+class DialogueMessage(TypedDict):
+    role: Literal["user", "assistant"]
+    content: str
+    created_at: str
+
+
 RouteKind = Literal["simple_read", "full"]
 
 
@@ -8,6 +15,7 @@ class WorkflowState(TypedDict):
     conversation_id: str | None
     current_datetime: str
     timezone: str
+    history: NotRequired[list[DialogueMessage]]
 
     route: NotRequired[RouteKind]
     analyst_model: NotRequired[str]

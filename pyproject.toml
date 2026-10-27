@@ -17,6 +17,7 @@ dependencies = [
     "typer>=0.12",
     # Агентный workflow и работа с локальными LLM (Ollama)
     "langgraph>=0.6",
+    "langgraph-checkpoint-sqlite>=3.1.2,<4",
     "langchain-core>=0.3",
     "langchain-ollama>=0.3",
 ]
