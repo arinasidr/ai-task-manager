@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 
 from ai_task_manager.config import Settings
@@ -29,10 +30,12 @@ def build_graph(
     analyst: Node,
     planner: Node,
     validator: Node,
+    checkpointer: BaseCheckpointSaver | None = None,
 ):
     graph = StateGraph(WorkflowState)
 
-    def prepare(_: WorkflowState) -> dict[str, Any]:
+    def prepare(state: WorkflowState) -> dict[str, Any]:
+        history = (state.get("history") or [])[-5:]
         return {
             "analysis": None,
             "plan": None,
@@ -43,6 +46,29 @@ def build_graph(
             "validator_feedback": [],
             "validation_attempts": 0,
             "fast_retry_done": False,
+            "history": [
+                *history,
+                {
+                    "role": "user",
+                    "content": state["request"],
+                    "created_at": state["current_datetime"],
+                },
+            ],
+        }
+
+    def remember_reply(state: WorkflowState) -> dict[str, Any]:
+        reply = state.get("reply")
+        if not reply:
+            return {}
+        return {
+            "history": [
+                *(state.get("history") or [])[-5:],
+                {
+                    "role": "assistant",
+                    "content": reply,
+                    "created_at": state["current_datetime"],
+                },
+            ]
         }
 
     graph.add_node("prepare", prepare)
@@ -50,14 +76,15 @@ def build_graph(
     graph.add_node("analyst", analyst)
     graph.add_node("planner", planner)
     graph.add_node("validator", validator)
+    graph.add_node("remember_reply", remember_reply)
 
     def after_analyst(state: WorkflowState) -> str:
         analysis = state.get("analysis")
         intent = analysis.get("intent") if isinstance(analysis, dict) else None
 
         if state.get("route") == "simple_read":
-            return "planner" if intent == "get_tasks" else END
-        return "planner" if intent in _PLANNABLE else END
+            return "planner" if intent == "get_tasks" else "remember_reply"
+        return "planner" if intent in _PLANNABLE else "remember_reply"
 
     graph.add_edge(START, "prepare")
     graph.add_edge("prepare", "route")
@@ -65,9 +92,10 @@ def build_graph(
     graph.add_conditional_edges(
         "analyst",
         after_analyst,
-        {"planner": "planner", END: END},
+        {"planner": "planner", "remember_reply": "remember_reply"},
     )
     graph.add_edge("planner", "validator")
-    graph.add_edge("validator", END)
+    graph.add_edge("validator", "remember_reply")
+    graph.add_edge("remember_reply", END)
 
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)
