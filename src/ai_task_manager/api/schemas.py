@@ -74,6 +74,8 @@ class ConfirmActionResponse(BaseModel):
     action_id: str
     status: Literal["confirmed"]
     applied: bool
+    # итог для пользователя (заполняется для действий, подготовленных агентами)
+    message: str | None = None
 
 
 class DeletePendingResponse(BaseModel):

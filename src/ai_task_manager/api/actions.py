@@ -12,6 +12,8 @@ from ai_task_manager.db.operation_service import (
     confirm_blocked_completion,
     confirm_delete_task,
 )
+from ai_task_manager.tools.confirmation import ACTION_TYPE as AGENT_PLAN
+from ai_task_manager.tools.confirmation import confirm_plan_action
 
 router = APIRouter(prefix="/api/v1/actions", tags=["actions"])
 Db = Annotated[sqlite3.Connection, Depends(get_db)]
@@ -24,6 +26,19 @@ def confirm_action(action_id: str, db: Db) -> dict:
 
     if operation is None:
         raise HTTPException(status_code=404, detail="Действие не найдено")
+
+    if operation["type"] == AGENT_PLAN:
+        # план, который составили агенты и принял валидатор (P09)
+        try:
+            result = confirm_plan_action(action_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return {
+            "action_id": action_id,
+            "status": "confirmed",
+            "applied": result is not None,
+            "message": result.summary() if result else "Действие уже было выполнено",
+        }
 
     if operation["type"] == "complete_task_with_blockers":
         confirm = confirm_blocked_completion
