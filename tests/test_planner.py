@@ -192,6 +192,94 @@ def test_dependency_to_unknown_title_asks_for_clarification(db: sqlite3.Connecti
     assert result.operations == []
 
 
+@pytest.mark.parametrize(
+    ("task", "depends_on"),
+    [
+        ("написать отчёт", "собрать данные"),  # короче, чем в списке задач
+        ("«Написать отчет по практике»", "Собрать данные для отчета."),  # ё, кавычки, точка
+        ("Написать отчёт по практикe", "Собрать данные для отчёта"),  # опечатка
+    ],
+)
+def test_dependency_titles_are_matched_fuzzily(
+    db: sqlite3.Connection, task: str, depends_on: str
+) -> None:
+    result = plan(
+        db,
+        {
+            "intent": "create_task",
+            "tasks": [
+                {"title": "Собрать данные для отчёта"},
+                {"title": "Написать отчёт по практике"},
+            ],
+            "dependencies": [{"task": task, "depends_on": depends_on}],
+        },
+    )
+    assert result.operations[2].args == {
+        "predecessor_task_id": "$new1",
+        "successor_task_id": "$new2",
+    }
+
+
+def test_dependency_pointing_to_same_task_asks_for_order(db: sqlite3.Connection) -> None:
+    result = plan(
+        db,
+        {
+            "intent": "create_task",
+            "tasks": [{"title": "Собрать данные"}, {"title": "Написать отчёт"}],
+            "dependencies": [{"task": "Написать отчёт", "depends_on": "Написать отчёт"}],
+        },
+    )
+    assert result.needs_clarification
+    assert "сначала …, потом …" in result.message_to_user
+    assert result.operations == []
+
+
+@pytest.mark.parametrize(
+    ("request_text", "titles", "expected"),
+    [
+        (
+            "Добавь две задачи: сначала собрать данные для отчёта, потом написать отчёт",
+            ["Собрать данные для отчёта", "Написать отчёт"],
+            ("$new1", "$new2"),
+        ),
+        (
+            "Добавь: написать отчёт, но сначала собрать данные",
+            ["Написать отчёт", "Собрать данные"],
+            ("$new2", "$new1"),
+        ),
+    ],
+)
+def test_broken_dependency_is_recovered_from_request_order(
+    db: sqlite3.Connection, request_text: str, titles: list[str], expected: tuple[str, str]
+) -> None:
+    # реальный ответ gemma: задача «зависит сама от себя»
+    result = plan(
+        db,
+        {
+            "intent": "create_task",
+            "tasks": [{"title": title} for title in titles],
+            "dependencies": [{"task": titles[0], "depends_on": titles[0]}],
+        },
+        request=request_text,
+    )
+    link_op = result.operations[2]
+    assert (link_op.args["predecessor_task_id"], link_op.args["successor_task_id"]) == expected
+    assert any("восстановлен кодом" in note for note in result.reasoning)
+
+
+def test_broken_dependency_without_order_words_still_asks(db: sqlite3.Connection) -> None:
+    result = plan(
+        db,
+        {
+            "intent": "create_task",
+            "tasks": [{"title": "A"}, {"title": "B"}],
+            "dependencies": [{"task": "A", "depends_on": "A"}],
+        },
+        request="Добавь задачи A и B, они связаны",
+    )
+    assert result.needs_clarification
+
+
 # ---------------------------------------------------------------- изменение
 
 
@@ -524,7 +612,11 @@ def test_system_prompt_is_loaded_and_mentions_rules() -> None:
     prompt = load_system_prompt()
     assert "# SOUL - AI Task Manager" in prompt
     assert "ordered_task_ids" in prompt
-    assert "Никогда не придумывай задачи" in prompt
+    assert "Не придумывать задачи" in prompt
+    # роль + скилл планирования
+    assert "# Роль: планировщик" in prompt
+    assert "# task-planning" in prompt
+    assert "name: task-planning" not in prompt  # метаданные скилла в промпт не идут
     # в промпте нет готового примера ответа: маленькие модели его копируют
     assert "```json" not in prompt
     assert "## Примеры ответов пользователю" not in prompt

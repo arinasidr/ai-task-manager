@@ -6,6 +6,7 @@ from langgraph.graph import END, START, StateGraph
 
 from ai_task_manager.config import Settings
 
+from .nodes import finish_node
 from .router import route_request
 from .state import WorkflowState
 
@@ -24,14 +25,27 @@ _PLANNABLE = frozenset(
 )
 
 
+# Сколько раз валидатор может проверить план за один запрос: первая проверка + один повтор
+# планировщика с замечаниями. Дальше — ответ пользователю, без зацикливания (ТЗ, FR-20).
+MAX_VALIDATION_ATTEMPTS = 2
+
+
 def build_graph(
     settings: Settings,
     *,
     analyst: Node,
     planner: Node,
     validator: Node,
+    act: Node | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
 ):
+    """Граф: prepare → route → analyst → planner → validator → act → finish → remember_reply.
+
+    После отказа валидатора план возвращается планировщику с замечаниями, если план строила
+    модель (`source = "llm"`) и лимит проверок не исчерпан. План, построенный кодом, от
+    замечаний не изменится — повтор бессмыслен, сразу ответ пользователю. `finish` гарантирует
+    ответ, `remember_reply` сохраняет его в историю диалога.
+    """
     graph = StateGraph(WorkflowState)
 
     def prepare(state: WorkflowState) -> dict[str, Any]:
@@ -76,6 +90,9 @@ def build_graph(
     graph.add_node("analyst", analyst)
     graph.add_node("planner", planner)
     graph.add_node("validator", validator)
+    graph.add_node("finish", finish_node)
+    if act is not None:
+        graph.add_node("act", act)
     graph.add_node("remember_reply", remember_reply)
 
     def after_analyst(state: WorkflowState) -> str:
@@ -83,8 +100,18 @@ def build_graph(
         intent = analysis.get("intent") if isinstance(analysis, dict) else None
 
         if state.get("route") == "simple_read":
-            return "planner" if intent == "get_tasks" else "remember_reply"
-        return "planner" if intent in _PLANNABLE else "remember_reply"
+            return "planner" if intent == "get_tasks" else "finish"
+        return "planner" if intent in _PLANNABLE else "finish"
+
+    def after_validator(state: WorkflowState) -> str:
+        verdict = state.get("verdict") or {}
+        if verdict.get("decision") == "accept":
+            return "act" if act is not None else "finish"
+        plan = state.get("plan") or {}
+        attempts = state.get("validation_attempts", 0)
+        if plan.get("source") == "llm" and attempts < MAX_VALIDATION_ATTEMPTS:
+            return "planner"
+        return "finish"
 
     graph.add_edge(START, "prepare")
     graph.add_edge("prepare", "route")
@@ -92,10 +119,15 @@ def build_graph(
     graph.add_conditional_edges(
         "analyst",
         after_analyst,
-        {"planner": "planner", "remember_reply": "remember_reply"},
+        {"planner": "planner", "finish": "finish"},
     )
     graph.add_edge("planner", "validator")
-    graph.add_edge("validator", "remember_reply")
+    validator_targets = {"planner": "planner", "finish": "finish"}
+    if act is not None:
+        validator_targets["act"] = "act"
+        graph.add_edge("act", "finish")
+    graph.add_conditional_edges("validator", after_validator, validator_targets)
+    graph.add_edge("finish", "remember_reply")
     graph.add_edge("remember_reply", END)
 
     return graph.compile(checkpointer=checkpointer)

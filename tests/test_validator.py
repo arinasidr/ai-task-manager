@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from ai_task_manager.agents.analyst.schema import AnalystResult
-from ai_task_manager.agents.contracts import Plan
+from ai_task_manager.agents.contracts import Analysis, Plan
 from ai_task_manager.agents.llm import LLMError
 from ai_task_manager.agents.planner import Planner
 from ai_task_manager.agents.validator import (
@@ -118,14 +118,25 @@ def test_default_settings_use_other_family_for_validator() -> None:
 # ---------------------------------------------------------------- слой 1: код
 
 
-def test_correct_plan_from_planner_passes_code_and_goes_to_llm(db: sqlite3.Connection) -> None:
-    task = add(db, "Отчёт")
-    analysis = {"intent": "delete_task", "task_id": task}
+def test_safe_write_plan_passes_code_and_goes_to_llm(db: sqlite3.Connection) -> None:
+    analysis = {"intent": "create_task", "tasks": [{"title": "Купить молоко"}]}
     llm = FakeLLM(ACCEPT)
     verdict = check(db, analysis, planned(db, analysis), llm)
     assert verdict.accepted
     assert verdict.source == "llm"
     assert len(llm.calls) == 1
+
+
+def test_dangerous_plan_is_checked_by_human_not_llm(db: sqlite3.Connection) -> None:
+    # удаление пользователь подтверждает по предварительному плану — модель не нужна
+    task = add(db, "Отчёт")
+    analysis = {"intent": "delete_task", "task_id": task}
+    llm = FakeLLM()
+    verdict = check(db, analysis, planned(db, analysis), llm)
+    assert verdict.accepted
+    assert verdict.source == "code"
+    assert "проверит пользователь" in verdict.notes[0]
+    assert llm.calls == []
 
 
 def test_delete_without_confirmation_is_rejected_by_code(db: sqlite3.Connection) -> None:
@@ -346,21 +357,30 @@ def test_llm_reject_returns_reasons_for_planner(db: sqlite3.Connection) -> None:
     assert sent["user"]["plan"]["operations"][0]["tool"] == "update_task"
 
 
-def test_plan_tasks_context_has_task_facts(db: sqlite3.Connection) -> None:
+def test_plan_tasks_is_checked_by_code_only(db: sqlite3.Connection) -> None:
     a = add(db, "A", due_date="2026-10-15")
     b = add(db, "B")
     link(db, a, b)
-    llm = FakeLLM(ACCEPT)
+    llm = FakeLLM()
     plan = Planner().plan({"intent": "plan_tasks"}, db, now=NOW).model_dump()
-    check(db, {"intent": "plan_tasks"}, plan, llm)
-    facts = {t["id"]: t for t in llm.calls[0]["user"]["tasks"]}
-    assert facts[a]["days_left"] == 1
-    assert facts[b]["blocked_by"] == [a]
+    verdict = check(db, {"intent": "plan_tasks"}, plan, llm)
+    assert verdict.accepted
+    assert llm.calls == []
+
+
+def test_llm_context_has_task_facts(db: sqlite3.Connection) -> None:
+    a = add(db, "A", due_date="2026-10-15")
+    analysis = {"intent": "update_task", "task_id": a, "updates": {"priority": "high"}}
+    plan = Planner().plan(analysis, db, now=NOW)
+    context = Validator(None, system_prompt="-")._llm_context(
+        "Сделай #1 срочной", Analysis.model_validate(analysis), plan, db, NOW
+    )
+    assert context["tasks"][0]["days_left"] == 1
+    assert context["tasks"][0]["blocked_by"] == []
 
 
 def test_reject_without_issues_is_retried_then_fail_closed(db: sqlite3.Connection) -> None:
-    task = add(db, "Отчёт")
-    analysis = {"intent": "delete_task", "task_id": task}
+    analysis = {"intent": "create_task", "tasks": [{"title": "A"}]}
     llm = FakeLLM({"decision": "reject", "issues": []}, LLMError("timeout"))
     verdict = check(db, analysis, planned(db, analysis), llm)
     assert len(llm.calls) == 2
@@ -377,12 +397,12 @@ def test_accept_with_issues_is_accept(db: sqlite3.Connection) -> None:
     assert verdict.notes
 
 
-def test_llm_unavailable_accepts_read_only_order(db: sqlite3.Connection) -> None:
+def test_read_only_order_does_not_need_llm(db: sqlite3.Connection) -> None:
     add(db, "A")
     plan = Planner().plan({"intent": "plan_tasks"}, db, now=NOW).model_dump()
-    verdict = check(db, {"intent": "plan_tasks"}, plan, FakeLLM(LLMError("x"), LLMError("y")))
+    verdict = check(db, {"intent": "plan_tasks"}, plan, FakeLLM(LLMError("x")))
     assert verdict.accepted
-    assert verdict.source == "unavailable"
+    assert verdict.source == "code"
 
 
 def test_no_llm_rejects_write_plans(db: sqlite3.Connection) -> None:
@@ -416,6 +436,9 @@ def test_system_prompt_has_soul_and_role() -> None:
     assert "`calendar`" in prompt
     assert prompt.startswith("# SOUL - AI Task Manager")
     assert "агент-валидатор" in prompt
+    assert "# task-validation" in prompt
+    # конкретная дата вместо «завтра» — норма, это записано в скилле
+    assert "Конкретная дата в плане" in prompt
     assert "## Примеры ответов пользователю" not in prompt
     assert "```json" not in prompt
 
@@ -424,9 +447,8 @@ def test_system_prompt_has_soul_and_role() -> None:
 
 
 def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
-    task = add(db, "Отчёт")
     llm = FakeLLM(
-        {"decision": "reject", "issues": [{"code": "wrong_task", "detail": "Не та задача"}]}
+        {"decision": "reject", "issues": [{"code": "invented_data", "detail": "Лишний срок"}]}
     )
     models: list[str] = []
 
@@ -435,7 +457,7 @@ def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
         return llm
 
     def analyst(_: dict) -> dict:
-        return {"analysis": {"intent": "delete_task", "task_id": task}}
+        return {"analysis": {"intent": "create_task", "tasks": [{"title": "Купить молоко"}]}}
 
     def planner(state: dict) -> dict:
         with closing(connect(db_path)) as connection:
@@ -450,7 +472,7 @@ def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
     )
     result = graph.invoke(
         {
-            "request": f"Удали задачу #{task}",
+            "request": "Добавь задачу купить молоко",
             "conversation_id": None,
             "current_datetime": NOW.isoformat(),
             "timezone": "Europe/Moscow",
@@ -458,7 +480,7 @@ def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
     )
     assert models == ["ministral-3:3b"]
     assert result["verdict"]["decision"] == "reject"
-    assert result["validator_feedback"] == ["Не та задача"]
+    assert result["validator_feedback"] == ["Лишний срок"]
     assert result["validation_attempts"] == 1
 
 

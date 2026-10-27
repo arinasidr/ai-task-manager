@@ -35,9 +35,11 @@ from ai_task_manager.agents.planner import (
     deadline_moment,
 )
 from ai_task_manager.db.crud_func import get_dependencies, get_task, list_tasks
-from ai_task_manager.prompting import with_soul
+from ai_task_manager.prompting import build_prompt
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "validator.md"
+# как выполнять работу: процедура, типичные случаи, чек-лист (skills/task-validation/SKILL.md)
+SKILL = "task-validation"
 
 IssueCode = Literal[
     "intent_mismatch",
@@ -135,7 +137,7 @@ def check_validator_family(validator_model: str, *checked_models: str | None) ->
 
 
 def load_system_prompt() -> str:
-    return with_soul(PROMPT_PATH.read_text(encoding="utf-8"))
+    return build_prompt(PROMPT_PATH.read_text(encoding="utf-8"), [SKILL])
 
 
 # ---------------------------------------------------------------- вердикт
@@ -332,11 +334,9 @@ class Validator:
         if issues:
             return _reject(*issues)
 
-        if not self._needs_llm(plan):
-            return Verdict(
-                decision="accept",
-                notes=["План ничего не меняет, проверки кода достаточно"],
-            )
+        skip_reason = self._needs_llm(plan)
+        if skip_reason:
+            return Verdict(decision="accept", notes=[skip_reason])
 
         if self.llm is None:
             return self._unavailable(plan, "Модель валидатора не подключена")
@@ -529,11 +529,25 @@ class Validator:
     # ---------------------------------------------------------- слой 2: LLM
 
     @staticmethod
-    def _needs_llm(plan: Plan) -> bool:
-        """Модель нужна, если план меняет данные или даёт рекомендации по порядку."""
+    def _needs_llm(plan: Plan) -> str | None:
+        """Нужна ли модель: None — нужна, иначе причина, почему хватает кода.
+
+        Модель проверяет только действия, которые выполнятся сразу и без участия человека.
+        Остальное уже проверено надёжнее: опасные действия пользователь подтверждает по
+        предварительному плану, построенному кодом; планы без изменений данных (показать
+        задачи, порядок выполнения) проверяет код. Живой прогон показал, что на таких планах
+        модель на 3B даёт ложные отказы (P10).
+        """
         if plan.needs_clarification:
-            return False
-        return plan.writes or plan.intent == "plan_tasks"
+            return "План просит уточнение и ничего не меняет"
+        if not plan.writes:
+            return "План ничего не меняет, проверки кода достаточно"
+        if plan.requires_confirmation:
+            return (
+                "Опасное действие: его проверит пользователь по предварительному плану "
+                "перед подтверждением"
+            )
+        return None
 
     def _llm_context(
         self,
