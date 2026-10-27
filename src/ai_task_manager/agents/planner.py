@@ -16,8 +16,10 @@
 Планировщик только читает БД. Записывают Tools после валидатора и подтверждения.
 """
 
+import difflib
 import heapq
 import json
+import re
 import sqlite3
 from datetime import UTC, date, datetime, time
 from pathlib import Path
@@ -28,6 +30,7 @@ from pydantic import ValidationError
 
 from ai_task_manager.agents.contracts import (
     Analysis,
+    ExtractedDependency,
     Operation,
     Plan,
     Recommendation,
@@ -39,9 +42,11 @@ from ai_task_manager.db.crud_func import (
     get_unfinished_predecessors,
     list_tasks,
 )
-from ai_task_manager.prompting import with_soul
+from ai_task_manager.prompting import build_prompt
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "planner.md"
+# как выполнять работу: процедура, типичные случаи, чек-лист (skills/task-planning/SKILL.md)
+SKILL = "task-planning"
 
 PLANNER_OUTPUT_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -76,7 +81,7 @@ _ANALYST_DECIDES = {"clarification_required", "unsupported"}
 
 
 def load_system_prompt() -> str:
-    return with_soul(PROMPT_PATH.read_text(encoding="utf-8"))
+    return build_prompt(PROMPT_PATH.read_text(encoding="utf-8"), [SKILL])
 
 
 # ---------------------------------------------------------------- сроки
@@ -121,6 +126,69 @@ def deadline_moment(fields: dict[str, Any], tz: ZoneInfo) -> datetime | None:
     if fields.get("due_date"):
         return datetime.combine(date.fromisoformat(fields["due_date"]), time.max, tzinfo=tz)
     return None
+
+
+def _normalize_title(title: str) -> str:
+    """Название для сравнения: регистр, «ё», кавычки, знаки препинания и пробелы не важны."""
+    text = title.casefold().replace("ё", "е")
+    text = re.sub(r"[^\w\s]", " ", text)
+    return " ".join(text.split())
+
+
+def _match_title(title: str, refs: dict[str, str]) -> str | None:
+    """Находит новую задачу по названию из связи: точно, по вхождению или по похожести.
+
+    Модели часто пишут в связях название чуть иначе, чем в списке задач («сбор данных» и
+    «Собрать данные для отчёта»).
+    """
+    key = _normalize_title(title)
+    if key in refs:
+        return refs[key]
+    contained = [ref for name, ref in refs.items() if key and (key in name or name in key)]
+    if len(set(contained)) == 1:
+        return contained[0]
+    scored = sorted(
+        ((difflib.SequenceMatcher(None, key, name).ratio(), ref) for name, ref in refs.items()),
+        reverse=True,
+    )
+    if scored and scored[0][0] >= 0.75 and (len(scored) == 1 or scored[1][0] < scored[0][0]):
+        return scored[0][1]
+    return None
+
+
+_ORDER_MARKERS = re.compile(
+    r"\b(сначала|потом|затем|после этого|после чего|а после|в конце)\b", re.IGNORECASE
+)
+
+
+def _order_from_request(request: str, tasks: list[Any]) -> tuple[int, int] | None:
+    """Порядок двух новых задач по тексту запроса: «сначала A, потом B» → (A, B).
+
+    Только для явных слов порядка и ровно двух задач; задачи ищутся в тексте по первому
+    слову названия. Если что-то не сходится — None, и пользователь получит вопрос.
+    """
+    if len(tasks) != 2 or not _ORDER_MARKERS.search(request):
+        return None
+    text = _normalize_title(request)
+    positions = []
+    for task in tasks:
+        words = _normalize_title(task.title).split()
+        if not words:
+            return None
+        found = re.search(rf"\b{re.escape(words[0][:5])}", text)
+        if found is None:
+            return None
+        positions.append(found.start())
+    if positions[0] == positions[1]:
+        return None
+    first_by_text = (0, 1) if positions[0] < positions[1] else (1, 0)
+    # «написать отчёт, но сначала собрать данные»: первой идёт задача сразу после «сначала»
+    first_marker = re.search(r"\bсначала\b", text)
+    if first_marker is not None:
+        after = [i for i, pos in enumerate(positions) if pos > first_marker.start()]
+        if len(after) == 1:
+            return (after[0], 1 - after[0])
+    return first_by_text
 
 
 def _deadline_text(task: dict[str, Any]) -> str | None:
@@ -202,6 +270,10 @@ class Planner:
         self.tz = ZoneInfo(timezone)
         self.max_llm_attempts = max_llm_attempts
         self.system_prompt = system_prompt or load_system_prompt()
+        self._request = ""
+        # Связи, исправленные кодом (см. _order_from_request); узел графа кладёт их в разбор,
+        # чтобы валидатор сверял план с исправленными, а не с ошибочными связями аналитика.
+        self.repaired_dependencies: list[ExtractedDependency] | None = None
 
     def plan(
         self,
@@ -217,6 +289,8 @@ class Planner:
         if not isinstance(analysis, Analysis):
             analysis = Analysis.model_validate(analysis)
         now = (now or datetime.now(UTC)).astimezone(self.tz)
+        self._request = request
+        self.repaired_dependencies = None
 
         handlers = {
             "create_task": self._plan_create,
@@ -304,7 +378,7 @@ class Planner:
                 args["priority"] = task.priority
             args.update({key: value for key, value in fields.items() if value is not None})
             operations.append(Operation(tool="create_task", ref=ref, args=args))
-            refs[task.title.strip().casefold()] = ref
+            refs[_normalize_title(task.title)] = ref
             moments[ref] = deadline_moment(fields, self.tz)
             if moments[ref] is not None and moments[ref] < now:
                 warnings.append("past_deadline")
@@ -313,23 +387,40 @@ class Planner:
                 )
 
         for dependency in analysis.dependencies:
-            successor = refs.get(dependency.task.strip().casefold())
-            predecessor = refs.get(dependency.depends_on.strip().casefold())
-            if successor is None or predecessor is None:
-                return self._clarify(
-                    analysis,
-                    [],
-                    ["ambiguous_request"],
-                ).model_copy(
-                    update={
-                        "message_to_user": (
-                            f"Не понял связь «{dependency.task}» ← «{dependency.depends_on}»: "
-                            "одной из задач нет в запросе. Уточните, пожалуйста."
+            successor = _match_title(dependency.task, refs)
+            predecessor = _match_title(dependency.depends_on, refs)
+            broken = successor is None or predecessor is None or successor == predecessor
+            if broken and len(analysis.dependencies) == 1:
+                # Аналитик ошибся в связи (например, «A ← A»), но порядок явно назван в запросе
+                # («сначала A, потом B») — восстанавливаем его кодом по тексту запроса.
+                recovered = _order_from_request(self._request, analysis.tasks)
+                if recovered is not None:
+                    first, second = recovered
+                    self.repaired_dependencies = [
+                        ExtractedDependency(
+                            task=analysis.tasks[second].title,
+                            depends_on=analysis.tasks[first].title,
                         )
-                    }
+                    ]
+                    predecessor, successor = f"new{first + 1}", f"new{second + 1}"
+                    broken = False
+                    reasoning.append(
+                        "Связь от аналитика некорректна "
+                        f"({dependency.task!r} ← {dependency.depends_on!r}); "
+                        "порядок восстановлен кодом по словам «сначала … потом» в запросе"
+                    )
+            if broken:
+                plan = self._clarify(analysis, [], ["ambiguous_request"])
+                plan.message_to_user = (
+                    "Не понял, какая задача должна идти после какой "
+                    f"(«{dependency.task}» после «{dependency.depends_on}»). "
+                    "Напишите, пожалуйста, порядок ещё раз: «сначала …, потом …»."
                 )
-            if successor == predecessor:
-                return self._clarify(analysis, [], ["dependency_cycle"])
+                plan.reasoning.append(
+                    "Связь не сопоставилась с задачами из запроса: "
+                    f"{dependency.task!r} ← {dependency.depends_on!r}, задачи: {list(refs)}"
+                )
+                return plan
             operations.append(
                 Operation(
                     tool="add_dependency",
