@@ -38,8 +38,11 @@ def build_graph(
     validator: Node,
     act: Node | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
+    decision: Node | None = None,
 ):
-    """Граф: prepare → route → analyst → planner → validator → act → finish → remember_reply.
+    """Граф: prepare → [decision] → route → analyst → planner → validator → act.
+
+    Затем finish → remember_reply; decision можно пропустить в изолированных тестах.
 
     После отказа валидатора план возвращается планировщику с замечаниями, если план строила
     модель (`source = "llm"`) и лимит проверок не исчерпан. План, построенный кодом, от
@@ -68,6 +71,8 @@ def build_graph(
                     "created_at": state["current_datetime"],
                 },
             ],
+            "decision": None,
+            "decision_error": None,
         }
 
     def remember_reply(state: WorkflowState) -> dict[str, Any]:
@@ -86,6 +91,8 @@ def build_graph(
         }
 
     graph.add_node("prepare", prepare)
+    if decision is not None:
+        graph.add_node("decision", decision)
     graph.add_node("route", lambda state: route_request(state, settings))
     graph.add_node("analyst", analyst)
     graph.add_node("planner", planner)
@@ -114,7 +121,11 @@ def build_graph(
         return "finish"
 
     graph.add_edge(START, "prepare")
-    graph.add_edge("prepare", "route")
+    if decision is not None:
+        graph.add_edge("prepare", "decision")
+        graph.add_edge("decision", "route")
+    else:
+        graph.add_edge("prepare", "route")
     graph.add_edge("route", "analyst")
     graph.add_conditional_edges(
         "analyst",

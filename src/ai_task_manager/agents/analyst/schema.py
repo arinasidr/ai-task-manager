@@ -53,11 +53,17 @@ class TaskSnapshot(StrictModel):
     due_timezone: str | None = None
 
 
+class DialogueContext(StrictModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class AnalystInput(StrictModel):
     request: str = Field(min_length=1)
     current_datetime: AwareDatetime
     timezone: str
     tasks: list[TaskSnapshot] = Field(default_factory=list)
+    history: list[DialogueContext] = Field(default_factory=list)
 
 
 class ExtractedTask(StrictModel):

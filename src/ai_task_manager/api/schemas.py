@@ -94,6 +94,7 @@ class CancelActionResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1)
     conversation_id: str | None = None
+    request_id: str | None = Field(default=None, min_length=1, max_length=128)
 
     @field_validator("message")
     @classmethod

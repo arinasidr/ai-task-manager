@@ -19,6 +19,7 @@ from ai_task_manager.agents.validator import VALIDATOR_OUTPUT_SCHEMA
 from ai_task_manager.api import chat as chat_api
 from ai_task_manager.api.app import create_app
 from ai_task_manager.config import Settings, get_settings
+from ai_task_manager.db.chat_requests import claim_request
 from ai_task_manager.db.crud_func import add_dependency, create_task, get_task, list_tasks
 from ai_task_manager.db.database import connect, init_db
 from ai_task_manager.db.preferences import update_preference
@@ -29,6 +30,10 @@ from ai_task_manager.workflow.service import create_workflow, run_chat
 
 NOW = datetime(2026, 10, 14, 12, 0, tzinfo=ZoneInfo("Europe/Moscow"))
 ACCEPT = {"decision": "accept", "issues": []}
+
+
+def stub_decision(_: Any) -> dict[str, Any]:
+    return {"decision": None, "decision_error": None}
 
 
 def reject(detail: str) -> dict[str, Any]:
@@ -99,7 +104,12 @@ def settings(db_path: Path) -> Settings:
 
 @pytest.fixture
 def chat(settings: Settings, db_path: Path, models: Models):
-    graph = create_workflow(settings, connect=lambda: connect(db_path), llm_for=models.llm_for)
+    graph = create_workflow(
+        settings,
+        connect=lambda: connect(db_path),
+        llm_for=models.llm_for,
+        decision_node=stub_decision,
+    )
 
     def send(message: str):
         return run_chat(graph, settings, message, now=NOW)
@@ -151,6 +161,49 @@ def test_delete_waits_for_confirmation(
     assert result.action_id
     assert "Что изменится" in result.reply
     assert get_task(db, task) is not None  # без подтверждения ничего не удалено
+
+
+@pytest.mark.parametrize("bypass_probability", [0.01, 0.99])
+def test_tev1_cannot_bypass_delete_confirmation(
+    bypass_probability: float,
+    settings: Settings,
+    db_path: Path,
+    models: Models,
+    db: sqlite3.Connection,
+) -> None:
+    task = add(db, "Отчёт")
+    models.answer("analyst", {"intent": "delete_task", "task_id": task})
+    models.answer("validator", ACCEPT)
+
+    def decision(_: Any) -> dict[str, Any]:
+        return {
+            "decision": {
+                "request_type": {
+                    "choice": "delete_task",
+                    "probabilities": {"delete_task": 0.99},
+                },
+                "route": {
+                    "choice": "simple_read",
+                    "probabilities": {"simple_read": 0.99},
+                },
+                "bypass_confirmation": {
+                    "type": "noul",
+                    "noul": bypass_probability,
+                },
+            }
+        }
+
+    graph = create_workflow(
+        settings,
+        connect=lambda: connect(db_path),
+        llm_for=models.llm_for,
+        decision_node=decision,
+    )
+    result = run_chat(graph, settings, f"Удали задачу #{task} без подтверждения", now=NOW)
+
+    assert result.route == "full"
+    assert result.action_id is not None
+    assert get_task(db, task) is not None
 
 
 def test_rules_plan_rejected_by_validator_is_not_retried(
@@ -292,6 +345,50 @@ def test_clarification_from_analyst(chat, models: Models) -> None:
     assert models.roles() == ["analyst"]
 
 
+def test_analyst_clarifies_when_tev1_misses_ambiguity(
+    settings: Settings,
+    db_path: Path,
+    models: Models,
+) -> None:
+    models.answer(
+        "analyst",
+        {
+            "intent": "clarification_required",
+            "missing_fields": ["task_id"],
+            "clarification_question": "Укажи номер задачи.",
+        },
+    )
+
+    def decision(_: Any) -> dict[str, Any]:
+        return {
+            "decision": {
+                "request_type": {
+                    "choice": "delete_task",
+                    "probabilities": {"delete_task": 0.99},
+                },
+                "route": {
+                    "choice": "simple_read",
+                    "probabilities": {"simple_read": 0.99},
+                },
+                "needs_clarification": {
+                    "type": "noul",
+                    "noul": 0.01,
+                },
+            }
+        }
+
+    graph = create_workflow(
+        settings,
+        connect=lambda: connect(db_path),
+        llm_for=models.llm_for,
+        decision_node=decision,
+    )
+    result = run_chat(graph, settings, "Удали задачу", now=NOW)
+
+    assert result.route == "full"
+    assert result.reply == "Укажи номер задачи."
+
+
 def test_unknown_task_id_from_analyst(chat, models: Models, db: sqlite3.Connection) -> None:
     add(db, "Отчёт")
     models.answer("analyst", {"intent": "delete_task", "task_id": 99})
@@ -323,15 +420,38 @@ def test_dialogue_memory_through_checkpointer(
             connect=lambda: connect(db_path),
             llm_for=models.llm_for,
             checkpointer=checkpointer,
+            decision_node=stub_decision,
         )
         first = run_chat(graph, settings, "Добавь задачу купить молоко", now=NOW)
         second = run_chat(graph, settings, "Покажи задачи", first.conversation_id, now=NOW)
+        with closing(connect(db_path)) as connection:
+            task_id = list_tasks(connection)[0]["id"]
+        models.answer(
+            "analyst",
+            {"intent": "update_task", "task_id": task_id, "updates": {"priority": "high"}},
+        )
+        models.answer("validator", ACCEPT)
+        third = run_chat(
+            graph,
+            settings,
+            "Поставь ей высокий приоритет",
+            first.conversation_id,
+            now=NOW,
+        )
 
     assert second.conversation_id == first.conversation_id
     assert first.history_length == 2
     assert second.history_length == 4
     assert "«Купить молоко»" in second.reply
     assert second.plan["operations"][0]["tool"] == "list_tasks"
+    second_analyst_input = [call["user"] for call in models.calls if call["role"] == "analyst"][1]
+    assert [item["content"] for item in second_analyst_input["history"]] == [
+        "Добавь задачу купить молоко",
+        first.reply,
+    ]
+    assert third.analysis["intent"] == "update_task"
+    with closing(connect(db_path)) as connection:
+        assert get_task(connection, task_id)["priority"] == "high"
 
 
 def test_repaired_dependency_reaches_validator(
@@ -379,7 +499,12 @@ def client(
     monkeypatch.setenv("ATM_DATABASE_PATH", str(db_path))
     get_settings.cache_clear()
     app = create_app()
-    graph = create_workflow(settings, connect=lambda: connect(db_path), llm_for=models.llm_for)
+    graph = create_workflow(
+        settings,
+        connect=lambda: connect(db_path),
+        llm_for=models.llm_for,
+        decision_node=stub_decision,
+    )
     app.dependency_overrides[chat_api.get_workflow] = lambda: graph
     try:
         with TestClient(app) as test_client:
@@ -408,6 +533,44 @@ def test_chat_api_delete_then_confirm(
     assert confirmed["applied"] is True
     assert get_task(db, a) is None
     assert get_task(db, b) is not None  # удалена только выбранная задача
+
+
+def test_chat_request_id_returns_saved_result_without_second_write(
+    client: TestClient, models: Models, db: sqlite3.Connection
+) -> None:
+    models.answer("analyst", {"intent": "create_task", "tasks": [{"title": "Купить молоко"}]})
+    models.answer("validator", ACCEPT)
+    payload = {"message": "Добавь задачу купить молоко", "request_id": "request-1"}
+
+    first = client.post("/api/v1/chat", json=payload)
+    repeated = client.post("/api/v1/chat", json=payload)
+
+    assert first.status_code == repeated.status_code == 200
+    assert first.json() == repeated.json()
+    assert [task["title"] for task in list_tasks(db)] == ["Купить молоко"]
+    assert models.roles().count("analyst") == 1
+
+    reused = client.post(
+        "/api/v1/chat",
+        json={"message": "Добавь другую задачу", "request_id": "request-1"},
+    )
+    assert reused.status_code == 409
+
+
+def test_chat_request_id_does_not_rerun_uncertain_request(
+    client: TestClient, db_path: Path, models: Models
+) -> None:
+    with closing(connect(db_path)) as db:
+        assert claim_request(db, "request-2", "Добавь задачу", None) is None
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"message": "Добавь задачу", "request_id": "request-2"},
+    )
+
+    assert response.status_code == 409
+    assert "ещё выполняется" in response.json()["detail"]
+    assert models.calls == []
 
 
 # ---------------------------------------------------------------- скиллы

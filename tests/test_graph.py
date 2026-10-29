@@ -124,3 +124,50 @@ def test_write_request_uses_main_models() -> None:
     assert result["route"] == "full"
     assert calls == ["gemma", "gemma", "ministral"]
     assert result["verdict"] == {"decision": "accept"}
+
+
+def test_decision_runs_before_router_without_misrouting_deletion() -> None:
+    calls: list[str] = []
+
+    def decision(_: WorkflowState) -> dict[str, Any]:
+        calls.append("decision")
+        return {
+            "decision": {
+                "request_type": {
+                    "choice": "delete_task",
+                    "probabilities": {"delete_task": 0.993},
+                },
+                "route": {
+                    "choice": "simple_read",
+                    "probabilities": {"simple_read": 0.698},
+                },
+            }
+        }
+
+    def analyst(state: WorkflowState) -> dict[str, Any]:
+        calls.append("analyst")
+        assert state["route"] == "full"
+        assert state["analyst_model"] == "deep"
+        return {"analysis": {"intent": "unsupported"}}
+
+    def unused(_: WorkflowState) -> dict[str, Any]:
+        pytest.fail("Планировщик и валидатор не должны запускаться")
+
+    graph = build_graph(
+        Settings(_env_file=None, analyst_model="deep", fast_model="fast"),
+        decision=decision,
+        analyst=analyst,
+        planner=unused,
+        validator=unused,
+    )
+    result = graph.invoke(
+        {
+            "request": "Удали задачу",
+            "conversation_id": None,
+            "current_datetime": "2026-10-29T12:00:00+03:00",
+            "timezone": "Europe/Moscow",
+        }
+    )
+
+    assert calls == ["decision", "analyst"]
+    assert result["route"] == "full"
