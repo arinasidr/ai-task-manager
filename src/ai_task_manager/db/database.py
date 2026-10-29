@@ -70,6 +70,15 @@ def init_db(db_path: str | Path | None = None) -> None:
             )
         """)
         connection.execute("""
+            CREATE TABLE IF NOT EXISTS chat_requests (
+                request_id TEXT PRIMARY KEY,
+                request_hash TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status IN ('processing', 'completed')),
+                response_json TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS preferences (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 kind TEXT NOT NULL CHECK (

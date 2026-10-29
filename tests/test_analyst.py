@@ -8,13 +8,18 @@ from ai_task_manager.agents.analyst.client import analyze
 from ai_task_manager.agents.analyst.schema import AnalystInput
 
 
-def make_input(request: str, tasks: list[dict] | None = None) -> AnalystInput:
+def make_input(
+    request: str,
+    tasks: list[dict] | None = None,
+    history: list[dict] | None = None,
+) -> AnalystInput:
     return AnalystInput.model_validate(
         {
             "request": request,
             "current_datetime": "2026-10-25T12:00:00+03:00",
             "timezone": "Europe/Moscow",
             "tasks": tasks or [],
+            "history": history or [],
         }
     )
 
@@ -68,3 +73,47 @@ def test_analyst_asks_for_id_not_mentioned_by_user() -> None:
 def test_analyst_rejects_empty_create_result() -> None:
     with pytest.raises(ValidationError):
         analyze(make_input("Добавь задачу купить молоко"), llm=FakeLLM({"intent": "create_task"}))
+
+
+def test_analyst_accepts_unambiguous_reference_to_last_reply() -> None:
+    data = make_input(
+        "Удали её",
+        [{"id": 12, "title": "Отчёт", "status": "todo"}],
+        [{"role": "assistant", "content": "Задача #12 «Отчёт»"}],
+    )
+
+    result = analyze(data, llm=FakeLLM({"intent": "delete_task", "task_id": 12}))
+
+    assert result.intent == "delete_task"
+    assert result.task_id == 12
+
+
+def test_analyst_rejects_ambiguous_reference_to_multiple_tasks() -> None:
+    data = make_input(
+        "Удали её",
+        [
+            {"id": 12, "title": "Отчёт", "status": "todo"},
+            {"id": 13, "title": "Письмо", "status": "todo"},
+        ],
+        [{"role": "assistant", "content": "#12 «Отчёт» и #13 «Письмо»"}],
+    )
+
+    result = analyze(data, llm=FakeLLM({"intent": "delete_task", "task_id": 12}))
+
+    assert result.intent == "clarification_required"
+    assert result.task_id is None
+
+
+def test_analyst_accepts_number_after_clarification() -> None:
+    data = make_input(
+        "12",
+        [{"id": 12, "title": "Отчёт", "status": "todo"}],
+        [
+            {"role": "user", "content": "Удали отчёт"},
+            {"role": "assistant", "content": "Укажи номер задачи, которую нужно удалить."},
+        ],
+    )
+
+    result = analyze(data, llm=FakeLLM({"intent": "delete_task", "task_id": 12}))
+
+    assert result.intent == "delete_task"

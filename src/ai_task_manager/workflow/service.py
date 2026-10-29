@@ -3,7 +3,7 @@
     создать граф:  create_workflow(settings)
     обработать:    run_chat(graph, settings, "Удали задачу #5")
 
-Порядок узлов: prepare → route (выбор моделей) → analyst → planner → validator →
+Порядок узлов: prepare → decision (Tev1) → route (выбор моделей) → analyst → planner → validator →
 (при отказе — снова planner с замечаниями, не больше MAX_VALIDATION_ATTEMPTS проверок) →
 act (выполнить или поставить на подтверждение) → finish (ответ пользователю).
 """
@@ -27,7 +27,8 @@ from ai_task_manager.db.database import connect as db_connect
 from ai_task_manager.memory.checkpoint import run_turn
 from ai_task_manager.tools.confirmation import make_action_node
 
-from .graph import build_graph
+from .decision import make_decision_node
+from .graph import Node, build_graph
 from .nodes import make_analyst_node, make_planner_node
 
 
@@ -62,8 +63,9 @@ def create_workflow(
     connect: Callable[[], sqlite3.Connection] | None = None,
     llm_for: Callable[[str], JsonLLM] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
+    decision_node: Node | None = None,
 ):
-    """Граф из настоящих агентов. С `checkpointer` (A11) граф помнит диалог по conversation_id."""
+    """Граф из настоящих агентов. С `checkpointer` (A12) граф помнит диалог по conversation_id."""
     connect = connect or (lambda: db_connect(settings.database_path))
     llm_for = llm_for or ollama_factory(settings)
     return build_graph(
@@ -73,6 +75,7 @@ def create_workflow(
         validator=make_validator_node(llm_for=llm_for, connect=connect),
         act=make_action_node(connect=connect),
         checkpointer=checkpointer,
+        decision=decision_node or make_decision_node(settings),
     )
 
 

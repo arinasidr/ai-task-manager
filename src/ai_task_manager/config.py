@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Moscow"
 
     fast_model: str = "qwen3:1.7b"
+    decision_model: str = "tev1:0.8b-q8_0"
     validator_model: str = "ministral-3:3b"
 
 

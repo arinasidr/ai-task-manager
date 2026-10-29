@@ -40,12 +40,20 @@ def make_analyst_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
             tasks = [
                 {key: task[key] for key in _SNAPSHOT_FIELDS} for task in list_tasks(connection)
             ]
+        history = state.get("history") or []
+        if history and history[-1]["role"] == "user" and history[-1]["content"] == state["request"]:
+            history = history[:-1]
         data = AnalystInput.model_validate(
             {
                 "request": state["request"],
                 "current_datetime": state["current_datetime"],
                 "timezone": state["timezone"],
                 "tasks": tasks,
+                # prepare уже добавил текущий запрос; аналитику нужны только прошлые реплики.
+                "history": [
+                    {"role": item["role"], "content": item["content"][:2000]}
+                    for item in history[-4:]
+                ],
             }
         )
         try:

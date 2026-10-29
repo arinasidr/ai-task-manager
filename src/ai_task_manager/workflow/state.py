@@ -34,3 +34,6 @@ class WorkflowState(TypedDict):
     pending_action_id: NotRequired[str | None]
 
     routing_reason: NotRequired[str]
+
+    decision: NotRequired[dict[str, Any] | None]
+    decision_error: NotRequired[str | None]

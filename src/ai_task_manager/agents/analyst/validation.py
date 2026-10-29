@@ -9,6 +9,14 @@ _TASK_IDS_RE = re.compile(
     r"(\d+(?:\s*(?:,|и)\s*\d+)*)\b",
     re.IGNORECASE,
 )
+_CONTEXT_REFERENCE_RE = re.compile(
+    r"\b(?:её|ее|ей|ею|его|нему|ней|эту|этой|этого)\b",
+    re.IGNORECASE,
+)
+_ID_QUESTION_RE = re.compile(
+    r"\b(?:укажи|назови|напиши|какой|нужен)\b.{0,60}\b(?:номер|id|идентификатор)\b",
+    re.IGNORECASE,
+)
 
 
 def _explicit_task_ids(request: str) -> set[int]:
@@ -16,6 +24,19 @@ def _explicit_task_ids(request: str) -> set[int]:
     for group in _TASK_IDS_RE.findall(request):
         ids.update(int(value) for value in re.findall(r"\d+", group))
     return ids
+
+
+def _contextual_task_ids(data: AnalystInput) -> set[int]:
+    """Разрешает только однозначную ссылку на последний ответ или номер после вопроса."""
+    if not data.history or data.history[-1].role != "assistant":
+        return set()
+    last_reply = data.history[-1].content
+    if _ID_QUESTION_RE.search(last_reply) and re.fullmatch(r"\s*\d+\s*", data.request):
+        return {int(data.request)}
+    if _CONTEXT_REFERENCE_RE.search(data.request):
+        ids = _explicit_task_ids(last_reply)
+        return ids if len(ids) == 1 else set()
+    return set()
 
 
 def validate_task_references(data: AnalystInput, result: AnalystResult) -> AnalystResult:
@@ -35,7 +56,7 @@ def validate_task_references(data: AnalystInput, result: AnalystResult) -> Analy
         raise ValueError(f"Неизвестные ID задач: {sorted(unknown_ids)}")
 
     if result.intent in {"update_task", "delete_task", "delete_tasks"}:
-        explicit_ids = _explicit_task_ids(data.request)
+        explicit_ids = _explicit_task_ids(data.request) | _contextual_task_ids(data)
         missing_ids = referenced_ids - explicit_ids
         if missing_ids:
             return AnalystResult(
