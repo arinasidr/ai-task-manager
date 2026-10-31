@@ -37,3 +37,8 @@ class WorkflowState(TypedDict):
 
     decision: NotRequired[dict[str, Any] | None]
     decision_error: NotRequired[str | None]
+
+    # P12: предложенное предпочтение, на которое ждём «да/нет» (живёт между ходами диалога)
+    pending_preference: NotRequired[dict[str, Any] | None]
+    # P12: id предложения, заданного в этом ходе (для ответа API)
+    preference_id: NotRequired[int | None]

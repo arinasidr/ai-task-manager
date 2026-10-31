@@ -42,6 +42,13 @@ from ai_task_manager.db.crud_func import (
     get_unfinished_predecessors,
     list_tasks,
 )
+from ai_task_manager.memory.inference import (
+    WEEKDAYS,
+    describe,
+    normalize_days,
+    normalize_value,
+    normalize_work_time,
+)
 from ai_task_manager.prompting import build_prompt
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "planner.md"
@@ -161,11 +168,17 @@ _ORDER_MARKERS = re.compile(
 )
 
 
-def _order_from_request(request: str, tasks: list[Any]) -> tuple[int, int] | None:
+def _order_from_request(
+    request: str, tasks: list[Any], *, strict: bool = False
+) -> tuple[int, int] | None:
     """Порядок двух новых задач по тексту запроса: «сначала A, потом B» → (A, B).
 
     Только для явных слов порядка и ровно двух задач; задачи ищутся в тексте по первому
     слову названия. Если что-то не сходится — None, и пользователь получит вопрос.
+
+    `strict` — аналитик связи не дал вовсе: тогда слово порядка должно стоять перед первой
+    задачей («сначала») или между задачами («A, потом B»), а не где угодно в запросе
+    («добавь A и B, потом покажи список» — это не связь).
     """
     if len(tasks) != 2 or not _ORDER_MARKERS.search(request):
         return None
@@ -182,6 +195,10 @@ def _order_from_request(request: str, tasks: list[Any]) -> tuple[int, int] | Non
     if positions[0] == positions[1]:
         return None
     first_by_text = (0, 1) if positions[0] < positions[1] else (1, 0)
+    if strict:
+        markers = [m for m in _ORDER_MARKERS.finditer(text) if m.start() < max(positions)]
+        if not markers:
+            return None
     # «написать отчёт, но сначала собрать данные»: первой идёт задача сразу после «сначала»
     first_marker = re.search(r"\bсначала\b", text)
     if first_marker is not None:
@@ -386,11 +403,30 @@ class Planner:
                     f"Срок задачи «{task.title}» уже прошёл — создаём, но предупреждаем"
                 )
 
-        for dependency in analysis.dependencies:
+        dependencies = list(analysis.dependencies)
+        if not dependencies:
+            # Аналитик пропустил связь, хотя порядок явно назван в запросе («сначала A, потом B»):
+            # без неё валидатор справедливо отклоняет план. Восстанавливаем связь кодом.
+            recovered = _order_from_request(self._request, analysis.tasks, strict=True)
+            if recovered is not None:
+                first, second = recovered
+                dependencies = [
+                    ExtractedDependency(
+                        task=analysis.tasks[second].title,
+                        depends_on=analysis.tasks[first].title,
+                    )
+                ]
+                self.repaired_dependencies = dependencies
+                reasoning.append(
+                    "Аналитик не указал связь; порядок восстановлен кодом по словам "
+                    "«сначала … потом» в запросе"
+                )
+
+        for dependency in dependencies:
             successor = _match_title(dependency.task, refs)
             predecessor = _match_title(dependency.depends_on, refs)
             broken = successor is None or predecessor is None or successor == predecessor
-            if broken and len(analysis.dependencies) == 1:
+            if broken and len(dependencies) == 1:
                 # Аналитик ошибся в связи (например, «A ← A»), но порядок явно назван в запросе
                 # («сначала A, потом B») — восстанавливаем его кодом по тексту запроса.
                 recovered = _order_from_request(self._request, analysis.tasks)
@@ -646,12 +682,15 @@ class Planner:
         if any(m is not None and m < now for m in moments.values()):
             warnings.append("past_deadline")
 
+        prefs = _PreferenceFacts(preferences or {}, by_id, moments, now)
         baseline = sorted(
             by_id,
             key=lambda t: (
                 moments[t] is None,
                 moments[t] or now,
                 _PRIORITY_RANK[by_id[t]["priority"]],
+                # предпочтения не спорят со сроками и приоритетами: только при прочих равных
+                t not in prefs.preferred_type_ids,
                 t,
             ),
         )
@@ -678,6 +717,7 @@ class Planner:
                         "days_left": _days_left(moments[t["id"]], now),
                         "blocked_by": sorted(p for p, s in edges if s == t["id"]),
                         "blocks": sorted(s for p, s in edges if p == t["id"]),
+                        **prefs.task_facts(t["id"]),
                     }
                     for t in tasks
                 ],
@@ -685,7 +725,7 @@ class Planner:
                     {"task_id": succ, "depends_on_id": pred} for pred, succ in sorted(edges)
                 ],
                 "conflicts": conflict_note,
-                "preferences": preferences or {},
+                "preferences": prefs.context(),
                 "validator_feedback": feedback or [],
             }
             user = json.dumps(context, ensure_ascii=False, indent=1)
@@ -693,8 +733,8 @@ class Planner:
             for attempt in range(1, self.max_llm_attempts + 1):
                 try:
                     raw = self.llm.complete_json(self.system_prompt, user, PLANNER_OUTPUT_SCHEMA)
-                    return self._accept_llm_order(
-                        raw, by_id, edges, warnings, conflict_note, baseline
+                    return prefs.apply(
+                        self._accept_llm_order(raw, by_id, edges, warnings, conflict_note, baseline)
                     )
                 except (LLMError, ValidationError, ValueError, KeyError, TypeError) as exc:
                     errors.append(f"попытка {attempt}: {exc}")
@@ -703,21 +743,29 @@ class Planner:
         else:
             fallback_reason = "Модель не подключена"
 
-        return Plan(
-            intent="plan_tasks",
-            ordered_task_ids=rule_order,
-            recommendations=[
-                Recommendation(task_id=t, reason=_rule_reason(by_id[t], edges, moments[t]))
-                for t in rule_order
-            ],
-            warnings=warnings,
-            message_to_user=_order_message(rule_order, by_id, conflict_note),
-            reasoning=[
-                fallback_reason,
-                "Порядок по правилам: зависимости, затем срок, затем приоритет",
-                *conflict_note,
-            ],
-            source="fallback",
+        return prefs.apply(
+            Plan(
+                intent="plan_tasks",
+                ordered_task_ids=rule_order,
+                recommendations=[
+                    Recommendation(
+                        task_id=t,
+                        reason=_rule_reason(by_id[t], edges, moments[t])
+                        + (
+                            "; предпочтительный тип задачи" if t in prefs.preferred_type_ids else ""
+                        ),
+                    )
+                    for t in rule_order
+                ],
+                warnings=warnings,
+                message_to_user=_order_message(rule_order, by_id, conflict_note),
+                reasoning=[
+                    fallback_reason,
+                    "Порядок по правилам: зависимости, затем срок, затем приоритет",
+                    *conflict_note,
+                ],
+                source="fallback",
+            )
         )
 
     def _accept_llm_order(
@@ -779,6 +827,97 @@ class Planner:
             reasoning=[*notes, *conflict_note] or ["Порядок модели принят без изменений"],
             source="llm",
         )
+
+
+class _PreferenceFacts:
+    """Подтверждённые предпочтения → факты для плана (P12).
+
+    Как и даты, факты считает код: маленькая модель не сопоставит «созвоны» с «Созвон с
+    командой» и не посчитает рабочие дни до срока. Предпочтения не спорят с зависимостями,
+    сроками и явными приоритетами — они влияют на порядок только при прочих равных и
+    объясняются пользователю отдельной строкой.
+    """
+
+    def __init__(
+        self,
+        preferences: dict[str, Any],
+        by_id: dict[int, dict[str, Any]],
+        moments: dict[int, datetime | None],
+        now: datetime,
+    ) -> None:
+        self.preferences = preferences
+        self.now = now
+        self.moments = moments
+        work_time = preferences.get("preferred_work_time")
+        self.work_time = normalize_work_time(work_time) or work_time
+        days = preferences.get("working_days")
+        self.days = normalize_days(days) if days else None
+        types = normalize_value("preferred_task_types", preferences.get("preferred_task_types"))
+        self.type_stems = [_stem(word) for item in (types or []) for word in item.split()]
+        self.type_stems = [stem for stem in self.type_stems if len(stem) >= 3]
+        self.preferred_type_ids = {
+            task_id for task_id, task in by_id.items() if self._matches_type(task["title"])
+        }
+        self.today = WEEKDAYS[now.weekday()]
+        self.today_is_working = self.days is None or self.today in self.days
+
+    def _matches_type(self, title: str) -> bool:
+        words = re.findall(r"\w+", title.casefold().replace("ё", "е"))
+        return any(word.startswith(stem) for stem in self.type_stems for word in words)
+
+    def _working_days_left(self, moment: datetime | None) -> int | None:
+        if self.days is None or moment is None:
+            return None
+        start, end = self.now.date(), moment.astimezone(self.now.tzinfo).date()
+        count, day = 0, start
+        while day <= end:
+            if WEEKDAYS[day.weekday()] in self.days:
+                count += 1
+            day = date.fromordinal(day.toordinal() + 1)
+        return count
+
+    def task_facts(self, task_id: int) -> dict[str, Any]:
+        facts: dict[str, Any] = {}
+        if self.type_stems:
+            facts["preferred_type"] = task_id in self.preferred_type_ids
+        left = self._working_days_left(self.moments[task_id])
+        if left is not None:
+            facts["working_days_left"] = left
+        return facts
+
+    def context(self) -> dict[str, Any]:
+        context = dict(self.preferences)
+        if self.days is not None:
+            context["today"] = self.today
+            context["today_is_working_day"] = self.today_is_working
+        return context
+
+    def apply(self, plan: Plan) -> Plan:
+        """Дописывает в план, какие предпочтения учтены и что из них следует."""
+        if not self.preferences:
+            return plan
+        lines = [describe(kind, value) for kind, value in self.preferences.items()]
+        notes = ["Учтены ваши предпочтения: " + "; ".join(lines) + "."]
+        if self.preferred_type_ids:
+            ids = ", ".join(f"#{task_id}" for task_id in sorted(self.preferred_type_ids))
+            notes.append(f"Задачи предпочтительного типа: {ids} — при прочих равных они раньше.")
+        if not self.today_is_working:
+            plan.warnings.append("non_working_day")
+            notes.append(
+                f"Сегодня {self.today} — по вашим предпочтениям нерабочий день; "
+                "порядок рассчитан на ближайший рабочий день."
+            )
+        if self.work_time:
+            notes.append(f"Начать лучше {self.work_time}, как вам удобнее.")
+        plan.message_to_user = "\n\n".join([plan.message_to_user, " ".join(notes)]).strip()
+        plan.reasoning.append("Применены подтверждённые предпочтения (P12): " + "; ".join(lines))
+        return plan
+
+
+def _stem(word: str) -> str:
+    """Грубая основа слова для сопоставления типов задач: «созвоны» ↔ «созвон»."""
+    word = word.casefold().replace("ё", "е")
+    return word[:5] if len(word) > 5 else word.rstrip("аяыиоеуюь")
 
 
 def _days_left(moment: datetime | None, now: datetime) -> int | None:

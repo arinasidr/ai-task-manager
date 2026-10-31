@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
@@ -66,7 +66,21 @@ class AnalystInput(StrictModel):
     history: list[DialogueContext] = Field(default_factory=list)
 
 
-class ExtractedTask(StrictModel):
+class BlankAsNone(StrictModel):
+    """Пустая строка от модели — «не указано»: qwen пишет `"deadline": ""` вместо null."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def blank_to_none(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return {
+                key: None if isinstance(value, str) and not value.strip() else value
+                for key, value in data.items()
+            }
+        return data
+
+
+class ExtractedTask(BlankAsNone):
     title: str = Field(min_length=1)
     priority: Priority | None = None
     deadline: Deadline | None = None
@@ -77,7 +91,7 @@ class ExtractedDependency(StrictModel):
     depends_on: str
 
 
-class ExtractedChanges(StrictModel):
+class ExtractedChanges(BlankAsNone):
     title: str | None = None
     deadline: Deadline | None = None
     priority: Priority | None = None

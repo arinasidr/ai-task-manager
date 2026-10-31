@@ -65,8 +65,13 @@ def make_analyst_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
             if isinstance(exc, LLMError) and "Ошибка вызова модели" in str(exc):
                 question = "Модель сейчас недоступна, попробуйте позже. Данные не изменены."
             elif isinstance(exc, ValueError) and "Неизвестные ID" in str(exc):
-                ids = ", ".join(f"#{n}" for n in re.findall(r"\d+", str(exc)))
-                question = f"Задачи {ids} нет. Проверьте номер — могу показать список задач."
+                numbers = re.findall(r"\d+", str(exc))
+                if set(numbers) <= set(re.findall(r"\d+", state["request"])):
+                    ids = ", ".join(f"#{n}" for n in numbers)
+                    question = f"Задачи {ids} нет. Проверьте номер — могу показать список задач."
+                else:
+                    # номер взяла модель (например, из прошлых реплик), пользователь его не писал
+                    question = "Укажите номер задачи — могу показать список задач."
             return {
                 "analysis": {
                     "intent": "clarification_required",
@@ -74,9 +79,24 @@ def make_analyst_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
                 },
                 "error": f"analyst: {exc}",
             }
-        return {"analysis": result.model_dump(mode="json")}
+        return {"analysis": _split_mixed_request(result.model_dump(mode="json"))}
 
     return analyst_node
+
+
+def _split_mixed_request(analysis: dict[str, Any]) -> dict[str, Any]:
+    """«Добавь задачу X, мне удобнее вечером»: главное — задача, предпочтение — догадка (P12).
+
+    Маленькая модель на таком запросе иногда выбирает `update_preference` и теряет задачу,
+    а предпочтение сохраняет без вопроса. Если аналитик выделил задачи, код считает запрос
+    созданием задачи, а предпочтение передаёт как подсказку: его предложат подтвердить.
+    """
+    if analysis.get("intent") != "update_preference" or not analysis.get("tasks"):
+        return analysis
+    analysis = dict(analysis)
+    analysis["intent"] = "create_task"
+    analysis["preference_hint"] = analysis.pop("preference", None)
+    return analysis
 
 
 def make_planner_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], dict]:

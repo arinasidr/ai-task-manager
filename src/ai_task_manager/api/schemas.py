@@ -109,3 +109,6 @@ class ChatResponse(BaseModel):
     conversation_id: str
     reply: str
     action_id: str | None = None
+    # Предложенное предпочтение (P12): ответьте «да»/«нет» в чате с тем же conversation_id
+    # или POST /api/v1/preferences/{preference_id}/confirm | /reject.
+    preference_id: int | None = None

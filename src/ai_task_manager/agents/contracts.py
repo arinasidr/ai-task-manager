@@ -94,6 +94,9 @@ class Analysis(BaseModel):
     missing_fields: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     message: str | None = None
+    # Предпочтение, которое аналитик заметил при другом намерении («добавь задачу…, мне удобнее
+    # вечером»). Это только догадка: её предлагают подтвердить (P12), в план она не идёт.
+    preference_hint: dict[str, Any] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -102,7 +105,8 @@ class Analysis(BaseModel):
 
         - `AnalystResult` (Pydantic-модель) превращается в словарь;
         - из `updates` убираются незаполненные поля: у аналитика `None` значит «не менять»;
-        - `preference = {kind, value}` переносится в `updates` (как в бенчмарке);
+        - `preference = {kind, value}` при `update_preference` переносится в `updates` (как в
+          бенчмарке), при другом намерении — в `preference_hint`;
         - `clarification_question` становится `message`.
         """
         if isinstance(data, BaseModel):
@@ -117,7 +121,10 @@ class Analysis(BaseModel):
         }
         preference = data.pop("preference", None)
         if isinstance(preference, dict) and preference.get("kind"):
-            updates[preference["kind"]] = preference.get("value")
+            if data.get("intent") == "update_preference":
+                updates[preference["kind"]] = preference.get("value")
+            else:
+                data["preference_hint"] = preference
         data["updates"] = updates
         question = data.pop("clarification_question", None)
         if question and not data.get("message"):

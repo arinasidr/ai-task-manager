@@ -39,10 +39,14 @@ def build_graph(
     act: Node | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     decision: Node | None = None,
+    preference_answer: Node | None = None,
+    propose_preference: Node | None = None,
 ):
-    """Граф: prepare → [decision] → route → analyst → planner → validator → act.
+    """Граф: prepare → [preference_answer] → [decision] → route → analyst → planner →
+    validator → act → finish → [propose_preference] → remember_reply.
 
-    Затем finish → remember_reply; decision можно пропустить в изолированных тестах.
+    Узлы в скобках можно пропустить в изолированных тестах. `preference_answer` отвечает на
+    «да/нет» по предложенному предпочтению и сразу ведёт к `remember_reply` (P12).
 
     После отказа валидатора план возвращается планировщику с замечаниями, если план строила
     модель (`source = "llm"`) и лимит проверок не исчерпан. План, построенный кодом, от
@@ -73,6 +77,8 @@ def build_graph(
             ],
             "decision": None,
             "decision_error": None,
+            # pending_preference не сбрасываем: это вопрос из прошлого хода (P12)
+            "preference_id": None,
         }
 
     def remember_reply(state: WorkflowState) -> dict[str, Any]:
@@ -91,6 +97,10 @@ def build_graph(
         }
 
     graph.add_node("prepare", prepare)
+    if preference_answer is not None:
+        graph.add_node("preference_answer", preference_answer)
+    if propose_preference is not None:
+        graph.add_node("propose_preference", propose_preference)
     if decision is not None:
         graph.add_node("decision", decision)
     graph.add_node("route", lambda state: route_request(state, settings))
@@ -121,11 +131,18 @@ def build_graph(
         return "finish"
 
     graph.add_edge(START, "prepare")
-    if decision is not None:
-        graph.add_edge("prepare", "decision")
-        graph.add_edge("decision", "route")
+    first_step = "decision" if decision is not None else "route"
+    if preference_answer is not None:
+        graph.add_edge("prepare", "preference_answer")
+        graph.add_conditional_edges(
+            "preference_answer",
+            lambda state: "remember_reply" if state.get("reply") else first_step,
+            {"remember_reply": "remember_reply", first_step: first_step},
+        )
     else:
-        graph.add_edge("prepare", "route")
+        graph.add_edge("prepare", first_step)
+    if decision is not None:
+        graph.add_edge("decision", "route")
     graph.add_edge("route", "analyst")
     graph.add_conditional_edges(
         "analyst",
@@ -138,7 +155,11 @@ def build_graph(
         validator_targets["act"] = "act"
         graph.add_edge("act", "finish")
     graph.add_conditional_edges("validator", after_validator, validator_targets)
-    graph.add_edge("finish", "remember_reply")
+    if propose_preference is not None:
+        graph.add_edge("finish", "propose_preference")
+        graph.add_edge("propose_preference", "remember_reply")
+    else:
+        graph.add_edge("finish", "remember_reply")
     graph.add_edge("remember_reply", END)
 
     return graph.compile(checkpointer=checkpointer)

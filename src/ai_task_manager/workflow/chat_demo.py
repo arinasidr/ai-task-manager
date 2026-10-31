@@ -5,6 +5,8 @@
 Временная БД, рабочая не трогается. Каждое сообщение проходит роутер → аналитик →
 планировщик → валидатор → действие; печатаются ответ, модели, вердикт и время.
 Удаление подтверждается автоматически, чтобы показать весь путь.
+В середине диалога — долгосрочная память (P12): предпочтение, сказанное мимоходом, система
+предлагает запомнить, ответ «да» его сохраняет, и «С чего начать?» уже его учитывает.
 """
 
 import tempfile
@@ -14,6 +16,7 @@ from pathlib import Path
 
 from ai_task_manager.config import get_settings
 from ai_task_manager.db.database import connect, init_db
+from ai_task_manager.db.preferences import get_preferences
 from ai_task_manager.memory.checkpoint import open_checkpointer
 from ai_task_manager.tools.confirmation import confirm_plan_action
 from ai_task_manager.workflow.service import create_workflow, run_chat
@@ -21,6 +24,9 @@ from ai_task_manager.workflow.service import create_workflow, run_chat
 MESSAGES = [
     "Добавь две задачи: сначала собрать данные для отчёта, потом написать отчёт по практике",
     "Добавь срочную задачу исправить баг в авторизации на завтра",
+    # P12: предпочтение мимоходом → вопрос «запомнить?» → «да» → план его учитывает
+    "Добавь задачу созвон с командой, мне вообще удобнее работать вечером",
+    "да",
     "Покажи задачи",
     "С чего мне лучше начать?",
     "Удали задачу #1",
@@ -30,7 +36,10 @@ MESSAGES = [
 
 def _debug(result) -> None:
     """Что понял аналитик и почему план такой — чтобы разбирать неудачные ответы."""
-    analysis = result.analysis or {}
+    if result.analysis is None:
+        print("[аналитик не вызывался: ответ разобран кодом]")
+        return
+    analysis = result.analysis
     parts = [f"intent={analysis.get('intent')}"]
     if analysis.get("tasks"):
         parts.append("задачи=" + str([task.get("title") for task in analysis["tasks"]]))
@@ -70,6 +79,8 @@ def _run_dialogue(settings, path: Path) -> None:
                 f"валидатор: {verdict}, проверок {result.validation_attempts}; "
                 f"реплик в истории {result.history_length}]"
             )
+            if result.preference_id:
+                print(f"[предложено предпочтение #{result.preference_id}, ждёт «да/нет»]")
             if result.error:
                 print(f"[ошибка: {result.error}]")
             _debug(result)
@@ -90,7 +101,9 @@ def main() -> int:
         _run_dialogue(settings, path)
         with closing(connect(path)) as db:
             titles = [row["title"] for row in db.execute("SELECT title FROM tasks ORDER BY id")]
+            preferences = get_preferences(db)
         print(f"\nВ БД осталось: {titles}")
+        print(f"Подтверждённые предпочтения: {preferences}")
     return 0
 
 

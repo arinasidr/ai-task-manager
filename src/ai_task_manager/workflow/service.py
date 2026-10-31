@@ -5,7 +5,9 @@
 
 Порядок узлов: prepare → decision (Tev1) → route (выбор моделей) → analyst → planner → validator →
 (при отказе — снова planner с замечаниями, не больше MAX_VALIDATION_ATTEMPTS проверок) →
-act (выполнить или поставить на подтверждение) → finish (ответ пользователю).
+act (выполнить или поставить на подтверждение) → finish (ответ пользователю) →
+propose_preference (P12: предложить запомнить замеченное предпочтение) → remember_reply.
+Короткий ответ «да/нет» на такое предложение обрабатывает preference_answer сразу после prepare.
 """
 
 import sqlite3
@@ -30,6 +32,7 @@ from ai_task_manager.tools.confirmation import make_action_node
 from .decision import make_decision_node
 from .graph import Node, build_graph
 from .nodes import make_analyst_node, make_planner_node
+from .preferences import make_preference_answer_node, make_preference_proposal_node
 
 
 class ChatResult(BaseModel):
@@ -45,6 +48,8 @@ class ChatResult(BaseModel):
     analysis: dict[str, Any] | None = None
     plan: dict[str, Any] | None = None
     history_length: int = 0
+    # P12: предложенное в этом ходе предпочтение ждёт ответа «да/нет»
+    preference_id: int | None = None
 
 
 def ollama_factory(settings: Settings) -> Callable[[str], JsonLLM]:
@@ -76,6 +81,8 @@ def create_workflow(
         act=make_action_node(connect=connect),
         checkpointer=checkpointer,
         decision=decision_node or make_decision_node(settings),
+        preference_answer=make_preference_answer_node(connect=connect),
+        propose_preference=make_preference_proposal_node(connect=connect),
     )
 
 
@@ -116,4 +123,5 @@ def run_chat(
         analysis=state.get("analysis"),
         plan=state.get("plan"),
         history_length=len(state.get("history") or []),
+        preference_id=state.get("preference_id"),
     )
