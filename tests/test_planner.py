@@ -280,6 +280,37 @@ def test_broken_dependency_without_order_words_still_asks(db: sqlite3.Connection
     assert result.needs_clarification
 
 
+def test_missing_dependency_is_recovered_from_order_words(db: sqlite3.Connection) -> None:
+    # живой прогон: аналитик выделил обе задачи, но связь не вернул вовсе
+    titles = ["Собрать данные для отчёта", "Написать отчёт по практике"]
+    planner = Planner(None)
+    result = planner.plan(
+        {"intent": "create_task", "tasks": [{"title": title} for title in titles]},
+        db,
+        now=NOW,
+        request="Добавь две задачи: сначала собрать данные для отчёта, потом написать отчёт",
+    )
+    link_op = result.operations[2]
+    assert link_op.args == {"predecessor_task_id": "$new1", "successor_task_id": "$new2"}
+    assert planner.repaired_dependencies[0].depends_on == titles[0]
+
+
+@pytest.mark.parametrize(
+    "request_text",
+    [
+        "Добавь задачи купить хлеб и позвонить маме",
+        "Добавь задачи купить хлеб и позвонить маме, потом покажи список",
+    ],
+)
+def test_no_dependency_invented_without_order(db: sqlite3.Connection, request_text: str) -> None:
+    result = plan(
+        db,
+        {"intent": "create_task", "tasks": [{"title": "Купить хлеб"}, {"title": "Позвонить маме"}]},
+        request=request_text,
+    )
+    assert [op.tool for op in result.operations] == ["create_task", "create_task"]
+
+
 # ---------------------------------------------------------------- изменение
 
 

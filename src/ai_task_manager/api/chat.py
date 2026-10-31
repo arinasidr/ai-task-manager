@@ -60,6 +60,7 @@ def chat(payload: ChatRequest, workflow: Workflow, db: Db) -> ChatResponse:
         conversation_id=result.conversation_id,
         reply=result.reply,
         action_id=result.action_id,
+        preference_id=result.preference_id,
     )
     if payload.request_id is not None:
         complete_request(db, payload.request_id, response.model_dump())

@@ -22,7 +22,7 @@ from ai_task_manager.config import Settings, get_settings
 from ai_task_manager.db.chat_requests import claim_request
 from ai_task_manager.db.crud_func import add_dependency, create_task, get_task, list_tasks
 from ai_task_manager.db.database import connect, init_db
-from ai_task_manager.db.preferences import update_preference
+from ai_task_manager.db.preferences import get_preferences, propose_preference, update_preference
 from ai_task_manager.memory.checkpoint import open_checkpointer
 from ai_task_manager.prompting import load_skill, skill_metadata
 from ai_task_manager.workflow.graph import MAX_VALIDATION_ATTEMPTS, build_graph
@@ -397,6 +397,28 @@ def test_unknown_task_id_from_analyst(chat, models: Models, db: sqlite3.Connecti
     assert "Неизвестные ID" in result.error
 
 
+def test_id_invented_by_model_asks_for_number(chat, models: Models, db: sqlite3.Connection) -> None:
+    # живой прогон: «Удали отчёт» после удаления #1 — модель взяла #1 из прошлых реплик
+    add(db, "Отчёт")
+    models.answer("analyst", {"intent": "delete_task", "task_id": 99})
+    result = chat("Удали отчёт")
+    assert result.reply == "Укажите номер задачи — могу показать список задач."
+
+
+def test_blank_fields_from_fast_model_are_ignored(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    # живой прогон: qwen на «Покажи задачи» вернул задачи с "deadline": ""
+    add(db, "Отчёт")
+    models.answer(
+        "analyst",
+        {"intent": "get_tasks", "tasks": [{"title": "Отчёт", "deadline": "", "priority": ""}]},
+    )
+    result = chat("Покажи задачи")
+    assert "«Отчёт»" in result.reply
+    assert result.error is None
+
+
 def test_model_unavailable(chat, models: Models) -> None:
     models.answer("analyst", LLMError("Ошибка вызова модели gemma4:e2b: connection refused"))
     result = chat("Добавь задачу")
@@ -487,6 +509,200 @@ def test_repaired_dependency_reaches_validator(
             (second,),
         )
     ] == [first]
+
+
+# ---------------------------------------------------------------- долгосрочная память (P12)
+
+
+@pytest.fixture
+def dialogue(settings: Settings, db_path: Path, models: Models, tmp_path: Path):
+    """Диалог с памятью (чекпоинтер): ответ «да/нет» относится к вопросу из прошлого хода."""
+    with open_checkpointer(tmp_path / "memory.db") as checkpointer:
+        graph = create_workflow(
+            settings,
+            connect=lambda: connect(db_path),
+            llm_for=models.llm_for,
+            checkpointer=checkpointer,
+            decision_node=stub_decision,
+        )
+        conversation: dict[str, str | None] = {"id": None}
+
+        def send(message: str):
+            result = run_chat(graph, settings, message, conversation["id"], now=NOW)
+            conversation["id"] = result.conversation_id
+            return result
+
+        yield send
+
+
+def statuses(db: sqlite3.Connection) -> list[tuple[str, str]]:
+    return [
+        (row["kind"], row["status"])
+        for row in db.execute("SELECT kind, status FROM preferences ORDER BY id")
+    ]
+
+
+def create_with_hint(models: Models) -> None:
+    models.answer("analyst", {"intent": "create_task", "tasks": [{"title": "Созвон с командой"}]})
+    models.answer("validator", ACCEPT)
+
+
+def test_noticed_preference_is_proposed_not_applied(
+    dialogue, models: Models, db: sqlite3.Connection
+) -> None:
+    create_with_hint(models)
+
+    result = dialogue("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
+
+    assert result.reply.startswith("Готово: создана задача")
+    assert "запомнить, что вам удобнее работать вечером?" in result.reply
+    assert result.preference_id is not None
+    # догадка сохранена как предложение и до ответа не действует (FR-17, AC-19)
+    assert statuses(db) == [("preferred_work_time", "proposed")]
+    assert get_preferences(db) == {}
+
+
+def test_yes_confirms_and_plan_uses_preference(
+    dialogue, models: Models, db: sqlite3.Connection
+) -> None:
+    create_with_hint(models)
+    dialogue("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
+    calls_before = len(models.calls)
+
+    answer = dialogue("Да")
+
+    assert answer.reply.startswith("Запомнил: вам удобнее работать вечером")
+    assert len(models.calls) == calls_before  # ответ «да» разбирает код, модели не вызываются
+    assert get_preferences(db) == {"preferred_work_time": "вечером"}
+
+    models.answer("analyst", {"intent": "plan_tasks"})
+    models.answer("planner", order_answer([1]))
+    planned = dialogue("С чего начать?")
+    assert models.calls[-1]["user"]["preferences"] == {"preferred_work_time": "вечером"}
+    assert "Учтены ваши предпочтения: удобнее работать вечером" in planned.reply
+
+
+def test_no_rejects_and_is_not_asked_again(
+    dialogue, models: Models, db: sqlite3.Connection
+) -> None:
+    create_with_hint(models)
+    dialogue("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
+
+    answer = dialogue("нет, не надо")
+    assert "не запоминаю" in answer.reply
+    assert statuses(db) == [("preferred_work_time", "rejected")]
+
+    create_with_hint(models)
+    again = dialogue("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
+    assert "запомнить" not in again.reply.casefold()
+    assert again.preference_id is None
+
+
+def test_new_request_instead_of_answer_keeps_proposal_pending(
+    dialogue, models: Models, db: sqlite3.Connection
+) -> None:
+    create_with_hint(models)
+    dialogue("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
+
+    models.answer("analyst", {"intent": "get_tasks"})
+    result = dialogue("Покажи задачи")
+
+    assert "«Созвон с командой»" in result.reply
+    assert statuses(db) == [("preferred_work_time", "proposed")]
+    # вопрос больше не висит: «да» теперь — обычный запрос к аналитику
+    models.answer("analyst", {"intent": "unsupported"})
+    dialogue("да")
+    assert models.calls[-1]["role"] == "analyst"
+    assert get_preferences(db) == {}
+
+
+def test_explicit_preference_is_saved_without_question(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    models.answer(
+        "analyst",
+        {
+            "intent": "update_preference",
+            "preference": {"kind": "preferred_work_time", "value": "вечером"},
+        },
+    )
+    models.answer("validator", ACCEPT)
+
+    result = chat("Запомни, что мне удобнее работать вечером")
+
+    assert "запомнить" not in result.reply.casefold()
+    assert result.preference_id is None
+    assert get_preferences(db) == {"preferred_work_time": "вечером"}
+
+
+def test_no_preference_question_while_action_awaits_confirmation(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    task = add(db, "Отчёт")
+    models.answer("analyst", {"intent": "delete_task", "task_id": task})
+
+    result = chat(f"Удали задачу #{task}, я обычно работаю по утрам")
+
+    assert result.action_id is not None
+    assert result.preference_id is None
+    assert statuses(db) == []
+
+
+def test_analyst_hint_with_other_intent_becomes_proposal(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    models.answer(
+        "analyst",
+        {
+            "intent": "create_task",
+            "tasks": [{"title": "Пробежка"}],
+            "preference": {"kind": "working_days", "value": ["будни"]},
+        },
+    )
+    models.answer("validator", ACCEPT)
+
+    result = chat("Добавь пробежку, по выходным я отдыхаю от дел")
+
+    assert "удобнее работать по будням" in result.reply
+    # подсказка аналитика не попала в изменения задачи
+    created = models.calls[-1]["user"]["plan"]["operations"][0]["args"]
+    assert "working_days" not in created
+
+
+def test_mixed_request_keeps_task_and_asks_about_preference(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    # маленькая модель выбрала «запомнить», хотя пользователь просил создать задачу
+    models.answer(
+        "analyst",
+        {
+            "intent": "update_preference",
+            "tasks": [{"title": "Созвон с командой"}],
+            "preference": {"kind": "preferred_work_time", "value": "вечером"},
+        },
+    )
+    models.answer("validator", ACCEPT)
+
+    result = chat("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
+
+    assert [task["title"] for task in list_tasks(db)] == ["Созвон с командой"]
+    assert get_preferences(db) == {}  # без «запомни» — только предложение
+    assert result.preference_id is not None
+
+
+def test_proposed_preference_does_not_reach_planner(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    add(db, "A")
+    propose_preference(db, "preferred_work_time", "вечером")
+    db.commit()
+    models.answer("analyst", {"intent": "plan_tasks"})
+    models.answer("planner", order_answer([1]))
+
+    result = chat("С чего начать?")
+
+    assert models.calls[-1]["user"]["preferences"] == {}
+    assert "Учтены" not in result.reply
 
 
 # ---------------------------------------------------------------- HTTP API
