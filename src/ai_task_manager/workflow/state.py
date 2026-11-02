@@ -27,6 +27,8 @@ class WorkflowState(TypedDict):
     verdict: NotRequired[dict[str, Any] | None]
     validator_feedback: NotRequired[list[str]]
     validation_attempts: NotRequired[int]
+    agent_error_counts: NotRequired[dict[str, int]]
+    model_retry_counts: NotRequired[dict[str, int]]
     fast_retry_done: NotRequired[bool]
 
     reply: NotRequired[str | None]

@@ -5,7 +5,7 @@ from contextlib import ExitStack
 from functools import lru_cache
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ai_task_manager.api.dependencies import get_db
 from ai_task_manager.api.schemas import ChatRequest, ChatResponse
@@ -38,7 +38,12 @@ Db = Annotated[sqlite3.Connection, Depends(get_db)]
     response_model=ChatResponse,
     responses={503: {"description": "Модели недоступны (Ollama не запущена?)"}},
 )
-def chat(payload: ChatRequest, workflow: Workflow, db: Db) -> ChatResponse:
+def chat(
+    payload: ChatRequest,
+    workflow: Workflow,
+    db: Db,
+    request: Request,
+) -> ChatResponse:
     """Сообщение пользователя проходит аналитика, планировщика и валидатора.
 
     Безопасные действия выполняются сразу. Опасные возвращают `action_id`: подтвердить —
@@ -54,6 +59,19 @@ def chat(payload: ChatRequest, workflow: Workflow, db: Db) -> ChatResponse:
 
     try:
         result = run_chat(workflow, get_settings(), payload.message, payload.conversation_id)
+
+        metrics = request.app.state.metrics
+
+        for role, count in result.agent_error_counts.items():
+            for _ in range(count):
+                metrics.record_agent_error(role)
+
+        for role, count in result.model_retry_counts.items():
+            for _ in range(count):
+                metrics.record_retry(f"{role}_llm")
+
+        for _ in range(max(0, result.validation_attempts - 1)):
+            metrics.record_retry("validator")
     except ConnectionError as exc:  # pragma: no cover — защита на случай сбоя вне агентов
         raise HTTPException(status_code=503, detail=f"Модели недоступны: {exc}") from exc
     response = ChatResponse(

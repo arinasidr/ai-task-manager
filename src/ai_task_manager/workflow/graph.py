@@ -12,6 +12,24 @@ from .state import WorkflowState
 
 Node = Callable[[WorkflowState], dict[str, Any]]
 
+
+def _count_agent_error(
+    role: str,
+    node: Node,
+    is_error: Callable[[dict[str, Any]], bool],
+) -> Node:
+    def run(state: WorkflowState) -> dict[str, Any]:
+        update = node(state)
+        if not is_error(update):
+            return update
+
+        counts = dict(state.get("agent_error_counts") or {})
+        counts[role] = counts.get(role, 0) + 1
+        return {**update, "agent_error_counts": counts}
+
+    return run
+
+
 _PLANNABLE = frozenset(
     {
         "create_task",
@@ -79,6 +97,8 @@ def build_graph(
             "decision_error": None,
             # pending_preference не сбрасываем: это вопрос из прошлого хода (P12)
             "preference_id": None,
+            "agent_error_counts": {},
+            "model_retry_counts": {},
         }
 
     def remember_reply(state: WorkflowState) -> dict[str, Any]:
@@ -102,11 +122,39 @@ def build_graph(
     if propose_preference is not None:
         graph.add_node("propose_preference", propose_preference)
     if decision is not None:
-        graph.add_node("decision", decision)
+        graph.add_node(
+            "decision",
+            _count_agent_error(
+                "decision",
+                decision,
+                lambda update: update.get("decision_error") is not None,
+            ),
+        )
     graph.add_node("route", lambda state: route_request(state, settings))
-    graph.add_node("analyst", analyst)
-    graph.add_node("planner", planner)
-    graph.add_node("validator", validator)
+    graph.add_node(
+        "analyst",
+        _count_agent_error(
+            "analyst",
+            analyst,
+            lambda update: str(update.get("error") or "").startswith("analyst:"),
+        ),
+    )
+    graph.add_node(
+        "planner",
+        _count_agent_error(
+            "planner",
+            planner,
+            lambda update: (update.get("plan") or {}).get("source") == "fallback",
+        ),
+    )
+    graph.add_node(
+        "validator",
+        _count_agent_error(
+            "validator",
+            validator,
+            lambda update: (update.get("verdict") or {}).get("source") == "unavailable",
+        ),
+    )
     graph.add_node("finish", finish_node)
     if act is not None:
         graph.add_node("act", act)

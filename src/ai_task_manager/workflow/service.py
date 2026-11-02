@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.sqlite import SqliteSaver
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ai_task_manager.agents.llm import JsonLLM, OllamaJsonLLM
 from ai_task_manager.agents.validator import make_validator_node
@@ -50,6 +50,9 @@ class ChatResult(BaseModel):
     history_length: int = 0
     # P12: предложенное в этом ходе предпочтение ждёт ответа «да/нет»
     preference_id: int | None = None
+    decision_error: str | None = None
+    agent_error_counts: dict[str, int] = Field(default_factory=dict)
+    model_retry_counts: dict[str, int] = Field(default_factory=dict)
 
 
 def ollama_factory(settings: Settings) -> Callable[[str], JsonLLM]:
@@ -124,4 +127,7 @@ def run_chat(
         plan=state.get("plan"),
         history_length=len(state.get("history") or []),
         preference_id=state.get("preference_id"),
+        decision_error=state.get("decision_error"),
+        agent_error_counts=state.get("agent_error_counts") or {},
+        model_retry_counts=state.get("model_retry_counts") or {},
     )

@@ -591,6 +591,33 @@ def test_fallback_after_two_bad_llm_answers(db: sqlite3.Connection, chain: dict[
     assert order[-1] == chain["notes"]  # без срока и приоритета — в конце
 
 
+def test_llm_retry_count_resets_for_next_plan(
+    db: sqlite3.Connection, chain: dict[str, int]
+) -> None:
+    llm = FakeLLM(
+        LLMError("timeout"),
+        {
+            "ordered_task_ids": list(chain.values()),
+            "recommendations": [],
+            "message": "Начните с первой задачи.",
+        },
+    )
+    planner = Planner(llm)
+
+    result = planner.plan({"intent": "plan_tasks"}, db, now=NOW)
+
+    assert result.source == "llm"
+    assert len(llm.calls) == 2
+    assert planner.llm_retries == 1
+
+    planner.plan(
+        {"intent": "create_task", "tasks": [{"title": "Новая задача"}]},
+        db,
+        now=NOW,
+    )
+    assert planner.llm_retries == 0
+
+
 def test_rules_only_when_llm_is_not_connected(
     db: sqlite3.Connection, chain: dict[str, int]
 ) -> None:

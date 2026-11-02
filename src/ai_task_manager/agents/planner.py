@@ -286,6 +286,7 @@ class Planner:
         self.llm = llm
         self.tz = ZoneInfo(timezone)
         self.max_llm_attempts = max_llm_attempts
+        self.llm_retries = 0
         self.system_prompt = system_prompt or load_system_prompt()
         self._request = ""
         # Связи, исправленные кодом (см. _order_from_request); узел графа кладёт их в разбор,
@@ -308,6 +309,7 @@ class Planner:
         now = (now or datetime.now(UTC)).astimezone(self.tz)
         self._request = request
         self.repaired_dependencies = None
+        self.llm_retries = 0
 
         handlers = {
             "create_task": self._plan_create,
@@ -731,6 +733,7 @@ class Planner:
             user = json.dumps(context, ensure_ascii=False, indent=1)
             errors: list[str] = []
             for attempt in range(1, self.max_llm_attempts + 1):
+                self.llm_retries = attempt - 1
                 try:
                     raw = self.llm.complete_json(self.system_prompt, user, PLANNER_OUTPUT_SCHEMA)
                     return prefs.apply(

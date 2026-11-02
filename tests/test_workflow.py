@@ -271,6 +271,18 @@ def test_rejected_llm_plan_is_retried_with_feedback() -> None:
     assert calls["planner"] == [[], ["Сначала задача B"]]
     assert state["validation_attempts"] == 2
     assert state["verdict"]["decision"] == "accept"
+    assert state["agent_error_counts"] == {}
+
+
+def test_validator_error_is_retained_after_successful_retry() -> None:
+    unavailable = {**reject("Модель валидатора недоступна"), "source": "unavailable"}
+    accepted = {**ACCEPT, "source": "llm"}
+
+    state, calls = retry_graph([unavailable, accepted])
+
+    assert calls["validator"] == 2
+    assert state["verdict"]["source"] == "llm"
+    assert state["agent_error_counts"] == {"validator": 1}
 
 
 def test_retries_are_limited() -> None:
@@ -299,6 +311,31 @@ def test_plan_tasks_end_to_end_without_validator_model(
     # порядок проверяет код, модель-валидатор не нужна: план ничего не меняет
     assert models.roles() == ["analyst", "planner"]
     assert result.reply.splitlines()[1].startswith(f"1. #{b}")
+
+
+def test_planner_llm_retry_reaches_chat_result(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    task_id = add(db, "Отчёт")
+    models.answer("analyst", {"intent": "plan_tasks"})
+    models.answer("planner", LLMError("timeout"), order_answer([task_id]))
+
+    result = chat("С чего начать?")
+
+    assert models.roles() == ["analyst", "planner", "planner"]
+    assert result.model_retry_counts == {"planner": 1}
+    assert result.agent_error_counts == {}
+
+
+def test_validator_llm_retry_reaches_chat_result(chat, models: Models) -> None:
+    models.answer("analyst", {"intent": "create_task", "tasks": [{"title": "Отчёт"}]})
+    models.answer("validator", LLMError("timeout"), ACCEPT)
+
+    result = chat("Добавь задачу Отчёт")
+
+    assert models.roles() == ["analyst", "validator", "validator"]
+    assert result.model_retry_counts == {"validator": 1}
+    assert result.agent_error_counts == {}
 
 
 def test_preferences_reach_planner(chat, models: Models, db: sqlite3.Connection) -> None:
@@ -394,6 +431,7 @@ def test_unknown_task_id_from_analyst(chat, models: Models, db: sqlite3.Connecti
     models.answer("analyst", {"intent": "delete_task", "task_id": 99})
     result = chat("Удали задачу #99")
     assert result.reply.startswith("Задачи #99 нет")
+    assert result.error.startswith("user_input:")
     assert "Неизвестные ID" in result.error
 
 
@@ -403,6 +441,7 @@ def test_id_invented_by_model_asks_for_number(chat, models: Models, db: sqlite3.
     models.answer("analyst", {"intent": "delete_task", "task_id": 99})
     result = chat("Удали отчёт")
     assert result.reply == "Укажите номер задачи — могу показать список задач."
+    assert result.error.startswith("analyst:")
 
 
 def test_blank_fields_from_fast_model_are_ignored(
