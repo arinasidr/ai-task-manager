@@ -33,8 +33,11 @@ python3 -c 'import sys; assert sys.version_info >= (3, 11), sys.version' \
 python3 --version
 if ! python3 -m venv /tmp/atm-venv-check >/dev/null 2>&1; then
   echo "venv недоступен — ставлю python3-venv (нужен временный доступ к archive.ubuntu.com)"
-  apt-get update -qq
+  # В шаблоне подключены репозитории GitHub CLI и Docker — они закрыты политикой сети (403),
+  # и apt-get update завершается с ошибкой, хотя списки Ubuntu скачались. Это не мешает.
+  apt-get update -qq || echo "(часть репозиториев недоступна — нужен только Ubuntu, продолжаю)"
   DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv
+  python3 -m venv /tmp/atm-venv-check >/dev/null || { echo "venv так и не заработал"; exit 1; }
 fi
 rm -rf /tmp/atm-venv-check
 

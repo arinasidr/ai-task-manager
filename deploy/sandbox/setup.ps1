@@ -95,7 +95,8 @@ try {
 finally {
     Step "6. Закрываем временный доступ к PyPI и Ubuntu"
     foreach ($h in $TemporaryHosts) {
-        & sbx policy rm network --sandbox $Name --resource $h
+        # sbx спрашивает подтверждение (y/N): отвечаем «y» сами, чтобы скрипт не ждал
+        "y" | & sbx policy rm network --sandbox $Name --resource $h
         if ($LASTEXITCODE -ne 0) { Write-Warning "Не удалось удалить правило для $h — удалите вручную" }
     }
 }
