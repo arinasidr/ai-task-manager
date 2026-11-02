@@ -9,10 +9,7 @@ CRITERIA = ("coverage", "order", "constraints", "explanation", "restraint")
 JUDGE_SCHEMA = {
     "type": "object",
     "properties": {
-        **{
-            name: {"type": "integer", "minimum": 0, "maximum": 2}
-            for name in CRITERIA
-        },
+        **{name: {"type": "integer", "minimum": 0, "maximum": 2} for name in CRITERIA},
         "reason": {"type": "string"},
     },
     "required": [*CRITERIA, "reason"],
@@ -42,8 +39,13 @@ def judge_record(record: dict, model: str = JUDGE_MODEL) -> dict:
             {
                 key: task[key]
                 for key in (
-                    "id", "title", "status", "priority",
-                    "due_date", "due_time", "due_timezone",
+                    "id",
+                    "title",
+                    "status",
+                    "priority",
+                    "due_date",
+                    "due_time",
+                    "due_timezone",
                 )
             }
             for task in before["tasks"]

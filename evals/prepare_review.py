@@ -29,8 +29,7 @@ def main() -> None:
     pages = [
         "# Ручная оценка планов A16",
         "",
-        "Оцени каждый критерий от 0 до 2 по judge_rubric.md. "
-        "Запиши баллы в human_scores.csv.",
+        "Оцени каждый критерий от 0 до 2 по judge_rubric.md. Запиши баллы в human_scores.csv.",
         "",
     ]
 
@@ -52,10 +51,7 @@ def main() -> None:
                 "request": case["message"],
                 "now": case["now"],
                 "tasks": [
-                    {
-                        key: task[key]
-                        for key in ("id", "title", "status", "priority", "due_date")
-                    }
+                    {key: task[key] for key in ("id", "title", "status", "priority", "due_date")}
                     for task in tasks
                 ],
                 "dependencies": case["initial_db"]["dependencies"],

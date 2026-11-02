@@ -74,21 +74,18 @@ def score_analysis(case: dict, run: dict) -> dict:
     if "tasks" in expected:
         checks["tasks"] = _tasks(actual.get("tasks") or []) == _tasks(expected["tasks"])
     if "dependencies" in expected:
-        checks["dependencies"] = _dependencies(
-            actual.get("dependencies") or []
-        ) == _dependencies(expected["dependencies"])
+        checks["dependencies"] = _dependencies(actual.get("dependencies") or []) == _dependencies(
+            expected["dependencies"]
+        )
     if "task_id" in expected:
         checks["task_id"] = actual.get("task_id") == expected["task_id"]
     if "task_ids" in expected:
-        checks["task_ids"] = sorted(actual.get("task_ids") or []) == sorted(
-            expected["task_ids"]
-        )
+        checks["task_ids"] = sorted(actual.get("task_ids") or []) == sorted(expected["task_ids"])
     if "updates" in expected:
-        checks["updates"] = _updates(actual.get("updates")) == _updates(
-            expected["updates"]
-        )
+        checks["updates"] = _updates(actual.get("updates")) == _updates(expected["updates"])
 
     return {"passed": all(checks.values()), "checks": checks}
+
 
 def score_db(case: dict, run: dict) -> dict:
     expected = case["expected"]
@@ -102,9 +99,7 @@ def score_db(case: dict, run: dict) -> dict:
     if case.get("follow_up") is not None:
         follow_up_result = run["follow_up_result"] or {}
         checks["unchanged_before_confirmation"] = before == run["after_request"]
-        checks["follow_up_status"] = (
-            follow_up_result.get("status") == expected["follow_up_status"]
-        )
+        checks["follow_up_status"] = follow_up_result.get("status") == expected["follow_up_status"]
         checks["follow_up_applied"] = (
             follow_up_result.get("applied") is expected["follow_up_applied"]
         )
