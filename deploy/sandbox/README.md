@@ -67,7 +67,7 @@ API на `localhost:8000`).
 
 | Симптом | Что делать |
 |---|---|
-| `policy allow network atm …` — ошибка аргументов | в старых версиях sbx песочница задаётся флагом: `--sandbox atm` |
+| `policy … atm` — ошибка «sandbox name is no longer positional» | песочница задаётся флагом `--sandbox atm` (так в скриптах); в старых версиях sbx — позиционно |
 | «Модель недоступна» в ответах API | `sbx policy ls atm`: должно быть правило `localhost:11434`; Ollama запущена на хосте |
 | pip в setup не скачивает пакеты | `sbx policy log atm`: какой адрес заблокирован — добавьте его в `$TemporaryHosts` в `setup.ps1` |
 | `sbx` не запускается | `sbx diagnose`; проверить, что Windows Hypervisor Platform включена |

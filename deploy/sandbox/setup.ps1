@@ -50,7 +50,7 @@ Step "1. Сеть по умолчанию: всё запрещено"
 Invoke-Sbx policy set-default deny-all
 
 Step "2. Песочница без папок хоста, с лимитами и пробросом порта API"
-$exists = (& sbx ls) -match "^\s*$Name\s"
+$exists = (& sbx ls) -match "\b$Name\b"
 if ($exists -and $Recreate) {
     Invoke-Sbx rm --force $Name
     $exists = $false
@@ -64,8 +64,9 @@ if ($exists) {
 
 Step "3. Разрешения сети только для этой песочницы"
 # Ollama на хосте: из песочницы адрес host.docker.internal, прокси переводит его в localhost.
-Invoke-Sbx policy allow network $Name "localhost:11434"
-foreach ($h in $TemporaryHosts) { Invoke-Sbx policy allow network $Name $h }
+# Песочница в sbx policy задаётся флагом --sandbox (позиционное имя в новых версиях убрано).
+Invoke-Sbx policy allow network --sandbox $Name "localhost:11434"
+foreach ($h in $TemporaryHosts) { Invoke-Sbx policy allow network --sandbox $Name $h }
 
 try {
     Step "4. Код из последнего коммита"
@@ -85,13 +86,14 @@ try {
 finally {
     Step "6. Закрываем временный доступ к PyPI и Ubuntu"
     foreach ($h in $TemporaryHosts) {
-        & sbx policy rm network $Name --resource $h
+        & sbx policy rm network --sandbox $Name --resource $h
         if ($LASTEXITCODE -ne 0) { Write-Warning "Не удалось удалить правило для $h — удалите вручную" }
     }
 }
 
 Step "7. Итоговая политика сети"
-Invoke-Sbx policy ls $Name
+& sbx policy ls --sandbox $Name
+if ($LASTEXITCODE -ne 0) { & sbx policy ls }
 
 Write-Host "`nГотово. Дальше:" -ForegroundColor Green
 Write-Host "  powershell -ExecutionPolicy Bypass -File deploy\sandbox\start.ps1   # API в песочнице"

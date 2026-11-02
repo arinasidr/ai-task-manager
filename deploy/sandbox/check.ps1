@@ -26,10 +26,12 @@ try {
 }
 
 Step "3. Политика сети песочницы"
-& sbx policy ls $Name
+& sbx policy ls --sandbox $Name
+if ($LASTEXITCODE -ne 0) { & sbx policy ls }
 
 Step "4. Последние решения прокси (видно, что внешние адреса заблокированы)"
-& sbx policy log $Name --limit 20
+& sbx policy log --sandbox $Name --limit 20
+if ($LASTEXITCODE -ne 0) { & sbx policy log --limit 20 }
 
 if ($inside -eq 0 -and $api -eq 0) {
     Write-Host "`nИзоляция в порядке" -ForegroundColor Green
