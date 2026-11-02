@@ -6,7 +6,6 @@
 `tools/confirmation.py`.
 """
 
-import re
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
@@ -17,6 +16,7 @@ from pydantic import ValidationError
 
 from ai_task_manager.agents.analyst.client import analyze
 from ai_task_manager.agents.analyst.schema import AnalystInput
+from ai_task_manager.agents.analyst.validation import UnknownTaskIdsError
 from ai_task_manager.agents.llm import JsonLLM, LLMError
 from ai_task_manager.agents.planner import Planner
 from ai_task_manager.db.crud_func import list_tasks
@@ -59,26 +59,27 @@ def make_analyst_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
         try:
             result = analyze(data, llm=llm_for(state["analyst_model"]))
         except (LLMError, ValidationError, ValueError) as exc:
-            # Модель не ответила, ответ не прошёл схему или сослался на несуществующую задачу:
-            # ничего не делаем и просим уточнить.
             question = NOT_UNDERSTOOD
+            error_source = "analyst"
+
             if isinstance(exc, LLMError) and "Ошибка вызова модели" in str(exc):
                 question = "Модель сейчас недоступна, попробуйте позже. Данные не изменены."
-            elif isinstance(exc, ValueError) and "Неизвестные ID" in str(exc):
-                numbers = re.findall(r"\d+", str(exc))
-                if set(numbers) <= set(re.findall(r"\d+", state["request"])):
-                    ids = ", ".join(f"#{n}" for n in numbers)
+            elif isinstance(exc, UnknownTaskIdsError):
+                if exc.unknown_ids <= exc.user_supplied_ids:
+                    error_source = "user_input"
+                    ids = ", ".join(f"#{number}" for number in sorted(exc.unknown_ids))
                     question = f"Задачи {ids} нет. Проверьте номер — могу показать список задач."
                 else:
-                    # номер взяла модель (например, из прошлых реплик), пользователь его не писал
                     question = "Укажите номер задачи — могу показать список задач."
+
             return {
                 "analysis": {
                     "intent": "clarification_required",
                     "clarification_question": question,
                 },
-                "error": f"analyst: {exc}",
+                "error": f"{error_source}: {exc}",
             }
+
         return {"analysis": _split_mixed_request(result.model_dump(mode="json"))}
 
     return analyst_node
@@ -114,6 +115,10 @@ def make_planner_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
                 preferences=get_preferences(connection),
             )
         update: dict[str, Any] = {"plan": plan.model_dump(), "verdict": None}
+        if planner.llm_retries:
+            counts = dict(state.get("model_retry_counts") or {})
+            counts["planner"] = counts.get("planner", 0) + planner.llm_retries
+            update["model_retry_counts"] = counts
         if planner.repaired_dependencies is not None:
             # аналитик ошибся в связи, код восстановил её по тексту запроса — дальше по графу
             # (валидатор, история) идёт исправленный разбор

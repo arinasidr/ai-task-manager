@@ -388,6 +388,23 @@ def test_reject_without_issues_is_retried_then_fail_closed(db: sqlite3.Connectio
     assert verdict.source == "unavailable"
 
 
+def test_llm_retry_count_resets_for_next_validation(db: sqlite3.Connection) -> None:
+    analysis = {"intent": "create_task", "tasks": [{"title": "A"}]}
+    plan = planned(db, analysis)
+    llm = FakeLLM(LLMError("timeout"), ACCEPT)
+    validator = Validator(llm, model="ministral-3:3b")
+
+    verdict = validator.validate("Создай задачу A", analysis, plan, db, now=NOW)
+
+    assert verdict.accepted
+    assert verdict.source == "llm"
+    assert len(llm.calls) == 2
+    assert validator.llm_retries == 1
+
+    validator.validate("Проверь пустой план", analysis, None, db, now=NOW)
+    assert validator.llm_retries == 0
+
+
 def test_accept_with_issues_is_accept(db: sqlite3.Connection) -> None:
     analysis = {"intent": "create_task", "tasks": [{"title": "A"}]}
     llm = FakeLLM({"decision": "accept", "issues": [{"code": "other", "detail": "мелочь"}]})
@@ -448,7 +465,8 @@ def test_system_prompt_has_soul_and_role() -> None:
 
 def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
     llm = FakeLLM(
-        {"decision": "reject", "issues": [{"code": "invented_data", "detail": "Лишний срок"}]}
+        LLMError("timeout"),
+        {"decision": "reject", "issues": [{"code": "invented_data", "detail": "Лишний срок"}]},
     )
     models: list[str] = []
 
@@ -482,6 +500,8 @@ def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
     assert result["verdict"]["decision"] == "reject"
     assert result["validator_feedback"] == ["Лишний срок"]
     assert result["validation_attempts"] == 1
+    assert len(llm.calls) == 2
+    assert result["model_retry_counts"] == {"validator": 1}
 
 
 def test_validator_node_refuses_same_family(db_path: Path) -> None:

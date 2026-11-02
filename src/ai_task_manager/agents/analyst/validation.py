@@ -39,6 +39,13 @@ def _contextual_task_ids(data: AnalystInput) -> set[int]:
     return set()
 
 
+class UnknownTaskIdsError(ValueError):
+    def __init__(self, unknown_ids: set[int], user_supplied_ids: set[int]) -> None:
+        self.unknown_ids = unknown_ids
+        self.user_supplied_ids = user_supplied_ids
+        super().__init__(f"Неизвестные ID задач: {sorted(unknown_ids)}")
+
+
 def validate_task_references(data: AnalystInput, result: AnalystResult) -> AnalystResult:
     """Отклоняет ссылки модели на задачи, которых нет во входном контексте"""
     known_ids = {task.id for task in data.tasks}
@@ -53,7 +60,8 @@ def validate_task_references(data: AnalystInput, result: AnalystResult) -> Analy
 
     unknown_ids = referenced_ids - known_ids
     if unknown_ids:
-        raise ValueError(f"Неизвестные ID задач: {sorted(unknown_ids)}")
+        user_supplied_ids = _explicit_task_ids(data.request) | _contextual_task_ids(data)
+        raise UnknownTaskIdsError(unknown_ids, user_supplied_ids)
 
     if result.intent in {"update_task", "delete_task", "delete_tasks"}:
         explicit_ids = _explicit_task_ids(data.request) | _contextual_task_ids(data)

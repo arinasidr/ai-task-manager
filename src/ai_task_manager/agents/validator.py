@@ -307,6 +307,7 @@ class Validator:
         self.model = model
         self.tz = ZoneInfo(timezone)
         self.max_llm_attempts = max_llm_attempts
+        self.llm_retries = 0
         self.system_prompt = system_prompt or load_system_prompt()
 
     def validate(
@@ -318,6 +319,7 @@ class Validator:
         *,
         now: datetime | None = None,
     ) -> Verdict:
+        self.llm_retries = 0
         if plan is None:
             return _reject(("other", "Планировщик не вернул план"))
         plan = plan if isinstance(plan, Plan) else Plan.model_validate(plan)
@@ -347,6 +349,7 @@ class Validator:
         user = json.dumps(context, ensure_ascii=False, indent=1)
         errors: list[str] = []
         for attempt in range(1, self.max_llm_attempts + 1):
+            self.llm_retries = attempt - 1
             try:
                 raw = self.llm.complete_json(self.system_prompt, user, VALIDATOR_OUTPUT_SCHEMA)
                 return self._accept_llm_answer(raw, dates_verified=bool(dates_verified))
@@ -666,10 +669,15 @@ def make_validator_node(
                 connection,
                 now=datetime.fromisoformat(state["current_datetime"]),
             )
-        return {
+        update = {
             "verdict": verdict.model_dump(),
             "validator_feedback": [] if verdict.accepted else verdict.reasons,
             "validation_attempts": state.get("validation_attempts", 0) + 1,
         }
+        if validator.llm_retries:
+            counts = dict(state.get("model_retry_counts") or {})
+            counts["validator"] = counts.get("validator", 0) + validator.llm_retries
+            update["model_retry_counts"] = counts
+        return update
 
     return validator_node
