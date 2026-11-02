@@ -12,6 +12,11 @@ param([string]$Name = "atm", [int]$Port = 8000)
 function Step($text) { Write-Host "`n=== $text" -ForegroundColor Cyan }
 
 Step "1. Проверки изнутри песочницы"
+# Docker Sandboxes при старте пересоздаёт список пользователей (файлы при этом сохраняются),
+# поэтому atm восстанавливаем с тем же UID/GID, что у каталога данных. Без sudo, как в setup.
+$ensure = 'id atm >/dev/null 2>&1 || { getent group atm >/dev/null || groupadd -g $(stat -c %g /var/lib/atm) atm; useradd -u $(stat -c %u /var/lib/atm) -g atm -d /home/atm -m -s /bin/bash atm; }'
+& sbx exec -u root $Name bash -c $ensure
+if ($LASTEXITCODE -ne 0) { Write-Host "Не удалось восстановить пользователя atm — запустите setup.ps1 -Recreate" -ForegroundColor Red; exit 1 }
 & sbx exec -u atm -w /opt/atm $Name /opt/atm/.venv/bin/python deploy/sandbox/check_isolation.py
 $inside = $LASTEXITCODE
 
@@ -26,8 +31,7 @@ try {
 }
 
 Step "3. Политика сети песочницы"
-& sbx policy ls --sandbox $Name
-if ($LASTEXITCODE -ne 0) { & sbx policy ls }
+& sbx policy ls
 
 Step "4. Последние решения прокси (видно, что внешние адреса заблокированы)"
 & sbx policy log --sandbox $Name --limit 20

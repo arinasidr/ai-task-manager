@@ -102,8 +102,8 @@ finally {
 }
 
 Step "7. Итоговая политика сети"
-& sbx policy ls --sandbox $Name
-if ($LASTEXITCODE -ne 0) { & sbx policy ls }
+# sbx policy ls не фильтрует по песочнице: строка «sandbox:atm» — правила нашей песочницы
+& sbx policy ls
 
 Write-Host "`nГотово. Дальше:" -ForegroundColor Green
 Write-Host "  powershell -ExecutionPolicy Bypass -File deploy\sandbox\start.ps1   # API в песочнице"
