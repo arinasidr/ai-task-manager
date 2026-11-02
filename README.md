@@ -93,6 +93,29 @@ pytest tests/test_db.py
 разрешаем только при одном ID в последнем ответе; при нескольких ID система
 просит уточнить номер.
 
+## Долгосрочная память: предпочтения (A13, P12)
+
+Хранилище — таблица `preferences` (`db/preferences.py`, A13). Планировщик читает только
+подтверждённые значения (`get_preferences`).
+
+- **Явное** «запомни, что мне удобнее вечером» — аналитик (`update_preference`) → сохраняется сразу.
+- **Догадка** (`memory/inference.py`) — система заметила сама: пользователь сказал о себе
+  мимоходом («добавь задачу…, мне удобнее работать вечером»), аналитик заполнил `preference`
+  при другом намерении, или большинство задач закрыто в одно время суток. Догадка сохраняется
+  как `proposed`, а к ответу добавляется вопрос «запомнить?». Пока нет ответа, она ни на что
+  не влияет.
+- **Ответ** — «да»/«нет» следующим сообщением того же диалога (`workflow/preferences.py`,
+  без вызова моделей) или `POST /api/v1/preferences/{id}/confirm | /reject`. Отклонённое
+  больше не предлагается.
+- **Применение** — планировщик получает от кода готовые факты: `preferred_type` у задач
+  любимого типа, `working_days_left` и `today_is_working_day` при заданных рабочих днях.
+  Предпочтения не важнее зависимостей, сроков и приоритетов; в ответе есть строка
+  «Учтены ваши предпочтения: …».
+
+`GET /api/v1/preferences` — подтверждённые и ожидающие; `PUT /api/v1/preferences/{kind}` —
+изменить; `DELETE /api/v1/preferences/{kind}` — удалить. Проверка:
+`pytest tests/test_preference_memory.py tests/test_preferences.py`.
+
 ## HTTP API
 
 После запуска приложения документация маршрутов доступна по адресу
@@ -166,8 +189,9 @@ python -m ai_task_manager.tools.confirmation_demo   # сценарии подт�
 ## Workflow (P10, A14)
 
 `src/ai_task_manager/workflow/`:
-- `graph.py` — граф LangGraph: `prepare → decision (Tev1) → route → analyst → planner → validator → act → finish → remember_reply`; при отказе валидатора план, построенный моделью, возвращается планировщику с замечаниями (не больше `MAX_VALIDATION_ATTEMPTS = 2` проверок);
+- `graph.py` — граф LangGraph: `prepare → preference_answer → decision (Tev1) → route → analyst → planner → validator → act → finish → propose_preference → remember_reply`; при отказе валидатора план, построенный моделью, возвращается планировщику с замечаниями (не больше `MAX_VALIDATION_ATTEMPTS = 2` проверок);
 - `nodes.py` — узлы аналитика, планировщика и итогового ответа;
+- `preferences.py` — узлы долгосрочной памяти (P12): вопрос «запомнить?» после ответа и разбор «да/нет» в начале следующего хода;
 - `service.py` — сборка графа из настоящих агентов (`create_workflow`) и обработка сообщения (`run_chat`); если граф собран с `SqliteSaver`, ход идёт через `run_turn()` и история диалога сохраняется (см. «Память диалога»).
 - `decision.py` и `decision_client.py` — Tev1 через `/v1/systemone`: предварительная оценка типа запроса, маршрута, необходимости уточнения и попытки обойти подтверждение. Быстрый путь разрешён только для известных формулировок чтения; Tev1 может отправить их на полный разбор, но не может перевести неизвестный запрос с возможным изменением данных на путь чтения. При недоступной модели роутер использует прежние правила; уточнение решает аналитик, подтверждение проверяет код.
 
@@ -187,3 +211,15 @@ uvicorn ai_task_manager.api.app:app --reload   # затем Swagger: POST /api/v
 | Аналитик | — | `skills/task-extraction` |
 | Планировщик | `agents/prompts/planner.md` | `skills/task-planning` |
 | Валидатор | `agents/prompts/validator.md` | `skills/task-validation` |
+
+## Изолированное окружение (P13)
+
+На ASUS приложение работает внутри microVM Docker Sandboxes, а Ollama остаётся на хосте.
+Хост песочнице не виден, сеть закрыта, кроме Ollama; приложение работает от пользователя
+без sudo; лимиты — 2 CPU и 2 ГБ. Установка и проверка — `deploy/sandbox/README.md`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\sandbox\setup.ps1
+powershell -ExecutionPolicy Bypass -File deploy\sandbox\start.ps1
+powershell -ExecutionPolicy Bypass -File deploy\sandbox\check.ps1
+```
