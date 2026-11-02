@@ -17,7 +17,11 @@ Step "1. Проверки изнутри песочницы"
 $ensure = 'id atm >/dev/null 2>&1 || { getent group atm >/dev/null || groupadd -g $(stat -c %g /var/lib/atm) atm; useradd -u $(stat -c %u /var/lib/atm) -g atm -d /home/atm -m -s /bin/bash atm; }'
 & sbx exec -u root $Name bash -c $ensure
 if ($LASTEXITCODE -ne 0) { Write-Host "Не удалось восстановить пользователя atm — запустите setup.ps1 -Recreate" -ForegroundColor Red; exit 1 }
-& sbx exec -u atm -w /opt/atm $Name /opt/atm/.venv/bin/python deploy/sandbox/check_isolation.py
+# sbx exec -u понимает только пользователей шаблона (root, agent), поэтому заходим root и сразу
+# сбрасываем права до atm через runuser. Переменные с путями к сертификатам root убираем:
+# файлы по ним atm прочитать не может.
+$asAtm = 'cd /opt/atm && exec runuser -u atm -- env -u SSL_CERT_FILE -u REQUESTS_CA_BUNDLE -u CURL_CA_BUNDLE HOME=/home/atm'
+& sbx exec -u root $Name bash -c "$asAtm /opt/atm/.venv/bin/python deploy/sandbox/check_isolation.py"
 $inside = $LASTEXITCODE
 
 Step "2. API с хоста"
@@ -34,8 +38,8 @@ Step "3. Политика сети песочницы"
 & sbx policy ls
 
 Step "4. Последние решения прокси (видно, что внешние адреса заблокированы)"
-& sbx policy log --sandbox $Name --limit 20
-if ($LASTEXITCODE -ne 0) { & sbx policy log --limit 20 }
+# фильтра по песочнице у log нет: смотрим строки с SANDBOX = atm
+& sbx policy log --limit 20
 
 if ($inside -eq 0 -and $api -eq 0) {
     Write-Host "`nИзоляция в порядке" -ForegroundColor Green

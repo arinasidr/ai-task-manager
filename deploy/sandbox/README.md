@@ -70,5 +70,7 @@ API на `localhost:8000`).
 | `policy … atm` — ошибка «sandbox name is no longer positional» | песочница задаётся флагом `--sandbox atm` (так в скриптах); в старых версиях sbx — позиционно |
 | «Модель недоступна» в ответах API | `sbx policy ls atm`: должно быть правило `localhost:11434`; Ollama запущена на хосте |
 | pip в setup не скачивает пакеты | `sbx policy log atm`: какой адрес заблокирован — добавьте его в `$TemporaryHosts` в `setup.ps1` |
+| `sbx exec -u atm …` — «user atm not found» | `sbx exec -u` знает только пользователей шаблона; скрипты заходят root и сбрасывают права через `runuser -u atm` |
+| `apt-get update` в песочнице — 403 на `download.docker.com`, `cli.github.com` | репозитории шаблона закрыты политикой — так и должно быть; Ubuntu при этом обновляется |
 | `sbx` не запускается | `sbx diagnose`; проверить, что Windows Hypervisor Platform включена |
 | Docker Sandboxes не работает совсем | запасной вариант из P06: Docker Engine в WSL2 + gVisor (`runsc`) |
