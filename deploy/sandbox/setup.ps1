@@ -47,7 +47,16 @@ if ($dirty) { Write-Warning "Есть незакоммиченные измен�
 Step "1. Сеть по умолчанию: всё запрещено"
 # Если домен подходит и под разрешение, и под запрет, побеждает запрет. Поэтому не запрещаем
 # лишнее точечно, а ставим «запрещено всё» и открываем песочнице только нужное.
-Invoke-Sbx policy set-default deny-all
+# Задаётся один раз; при повторном запуске sbx отвечает «already initialized» — это нормально.
+# Если когда-то был выбран другой режим (Balanced/Open): sbx policy reset и запустить заново.
+# В Windows PowerShell 5.1 перенаправление stderr при ErrorActionPreference=Stop прерывает
+# скрипт на первой строке ошибки, поэтому на время этой команды — Continue.
+$ErrorActionPreference = "Continue"
+$out = (& sbx policy set-default deny-all 2>&1 | Out-String)
+$ErrorActionPreference = "Stop"
+if ($out -match "already initialized") { Write-Host "Общая политика уже задана раньше" }
+else { Write-Host $out }
+& sbx policy ls
 
 Step "2. Песочница без папок хоста, с лимитами и пробросом порта API"
 $exists = (& sbx ls) -match "\b$Name\b"
