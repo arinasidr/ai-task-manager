@@ -55,6 +55,8 @@ mkdir -p "$APP_DIR"
 tar -xzf "$ARCHIVE" -C "$APP_DIR"
 
 step "4. Зависимости"
+# requirements.txt ставит сам проект строкой «-e .»: точка считается от текущей папки.
+cd "$APP_DIR"
 python3 -m venv "$APP_DIR/.venv"
 "$APP_DIR/.venv/bin/pip" install --no-cache-dir -q -r "$APP_DIR/requirements.txt" \
   --no-warn-script-location
