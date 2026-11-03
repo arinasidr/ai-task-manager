@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     decision_model: str = "tev1:0.8b-q8_0"
     validator_model: str = "ministral-3:3b"
 
+    # Наблюдаемость (P14). Пусто — выключено: тесты и запуск без Phoenix ничего не пишут.
+    # Каталог логов: atm.log (JSON-строки: Tools, алерты, ошибки) и trajectories.jsonl.
+    log_dir: str | None = None
+    # OTLP/HTTP-адрес Phoenix, например http://localhost:6006/v1/traces
+    phoenix_endpoint: str | None = None
+    phoenix_project: str = "ai-task-manager"
+
 
 @lru_cache
 def get_settings() -> Settings:

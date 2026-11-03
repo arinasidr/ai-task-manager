@@ -9,6 +9,8 @@ langgraph>=0.6
 langgraph-checkpoint-sqlite>=3.1.2,<4
 langchain-core>=0.3
 langchain-ollama>=0.3
+arize-phoenix-otel>=0.17
+openinference-instrumentation-langchain>=0.1.80
 pytest>=8.0
 ruff>=0.6
 # сам проект (чтобы работали import ai_task_manager и команда atm)

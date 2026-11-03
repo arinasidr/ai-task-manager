@@ -744,6 +744,48 @@ def test_proposed_preference_does_not_reach_planner(
     assert "Учтены" not in result.reply
 
 
+# ---------------------------------------------------------------- траектория (P14)
+
+
+def test_trajectory_is_recorded_and_saved(
+    settings: Settings, db_path: Path, models: Models, tmp_path: Path
+) -> None:
+    logged = settings.model_copy(update={"log_dir": str(tmp_path / "logs")})
+    graph = create_workflow(
+        logged,
+        connect=lambda: connect(db_path),
+        llm_for=models.llm_for,
+        decision_node=stub_decision,
+    )
+    models.answer("analyst", {"intent": "create_task", "tasks": [{"title": "Купить молоко"}]})
+    models.answer("validator", ACCEPT)
+
+    result = run_chat(graph, logged, "Добавь задачу купить молоко", now=NOW)
+
+    nodes = [step["node"] for step in result.trajectory]
+    assert nodes == [
+        "preference_answer",
+        "decision",
+        "route",
+        "analyst",
+        "planner",
+        "validator",
+        "act",
+        "finish",
+        "propose_preference",
+        "remember_reply",
+    ]
+    by_node = {step["node"]: step for step in result.trajectory}
+    assert by_node["analyst"]["intent"] == "create_task"
+    assert by_node["planner"]["tools"] == ["create_task"]
+    assert by_node["validator"]["decision"] == "accept"
+    [line] = (tmp_path / "logs" / "trajectories.jsonl").read_text(encoding="utf-8").splitlines()
+    saved = json.loads(line)
+    assert saved["request"] == "Добавь задачу купить молоко"
+    assert [step["node"] for step in saved["steps"]] == nodes
+    assert saved["duration_ms"] == result.duration_ms
+
+
 # ---------------------------------------------------------------- HTTP API
 
 

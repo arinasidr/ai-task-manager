@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-phoenix/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/

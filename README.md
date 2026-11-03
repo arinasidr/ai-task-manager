@@ -223,3 +223,25 @@ powershell -ExecutionPolicy Bypass -File deploy\sandbox\setup.ps1
 powershell -ExecutionPolicy Bypass -File deploy\sandbox\start.ps1
 powershell -ExecutionPolicy Bypass -File deploy\sandbox\check.ps1
 ```
+
+## Наблюдаемость: трейсы, логи, траектории (P14)
+
+| Что | Где | Как смотреть |
+|---|---|---|
+| Трейсы: ход диалога → узлы LangGraph → вызовы моделей (промпт, ответ, токены) → Tools | Phoenix на хосте, SQLite `~/.phoenix/phoenix.db` | http://localhost:6006 → проект `ai-task-manager`; ходы одного диалога — сессия по `conversation_id` |
+| Логи: каждый вызов Tool, откат плана, блокировка без подтверждения, алерты A15, длительность `/chat` | `ATM_LOG_DIR/atm.log` (JSON-строки, ротация 5 МБ × 3) | любой просмотрщик; `trace_id` в строке ведёт к трейсу |
+| Траектории агентов: узлы, длительность и итог каждого шага | `ATM_LOG_DIR/trajectories.jsonl` | для Evals и разбора ошибок, Phoenix не нужен |
+| Метрики и алерты (A15) | память процесса | `GET /api/v1/metrics`; алерт дублируется строкой WARNING в `atm.log` |
+
+Запуск Phoenix (один раз — отдельное окружение, чтобы тяжёлые зависимости не попали в проект):
+
+```powershell
+python -m venv .venv-phoenix
+.venv-phoenix\Scripts\pip install arize-phoenix
+.venv-phoenix\Scripts\phoenix serve          # http://localhost:6006
+```
+
+В `.env` приложения: `ATM_LOG_DIR=data/logs` и `ATM_PHOENIX_ENDPOINT=http://localhost:6006/v1/traces`
+(без них ничего не пишется и не отправляется). В песочнице P13 это уже настроено: логи в
+`/var/lib/atm/logs`, трейсы на `host.docker.internal:6006` — порт открыт политикой.
+Код: `observability/setup.py`, `tracing.py`, `trajectory.py`. Проверка: `pytest tests/test_tracing.py`.

@@ -79,6 +79,8 @@ def _run_dialogue(settings, path: Path) -> None:
                 f"валидатор: {verdict}, проверок {result.validation_attempts}; "
                 f"реплик в истории {result.history_length}]"
             )
+            if settings.phoenix_endpoint and result.trace_id:
+                print(f"[трейс в Phoenix: {result.trace_id}]")
             if result.preference_id:
                 print(f"[предложено предпочтение #{result.preference_id}, ждёт «да/нет»]")
             if result.error:
@@ -103,6 +105,10 @@ def main() -> int:
             titles = [row["title"] for row in db.execute("SELECT title FROM tasks ORDER BY id")]
             preferences = get_preferences(db)
         print(f"\nВ БД осталось: {titles}")
+        if settings.log_dir:
+            print(f"Логи и траектории: {settings.log_dir}")
+        if settings.phoenix_endpoint:
+            print("Трейсы: http://localhost:6006 → проект ai-task-manager")
         print(f"Подтверждённые предпочтения: {preferences}")
     return 0
 

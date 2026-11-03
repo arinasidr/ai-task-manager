@@ -29,6 +29,8 @@ class WorkflowState(TypedDict):
     validation_attempts: NotRequired[int]
     agent_error_counts: NotRequired[dict[str, int]]
     model_retry_counts: NotRequired[dict[str, int]]
+    # P14: пройденные узлы графа с длительностью и итогом шага
+    trajectory: NotRequired[list[dict[str, Any]]]
     fast_retry_done: NotRequired[bool]
 
     reply: NotRequired[str | None]

@@ -178,6 +178,18 @@ def check_network(
     else:
         checks.append(Check("Ollama на хосте доступна", "fail", error or f"HTTP {status}"))
 
+    # Phoenix (P14): единственный, кроме Ollama, открытый адрес. Не запущен — предупреждение.
+    status, error, _ = probe("http://host.docker.internal:6006/", timeout=6)
+    checks.append(
+        Check(
+            "Phoenix на хосте доступен",
+            "ok" if status == 200 else "warn",
+            "трейсы уходят в host.docker.internal:6006"
+            if status == 200
+            else f"{error or status} — запустите phoenix serve на хосте",
+        )
+    )
+
     outside = [
         "https://example.com",
         "http://example.com",
@@ -252,8 +264,8 @@ def main(argv: list[str] | None = None) -> int:
         "--closed-host-ports",
         type=int,
         nargs="*",
-        default=[8080, 6006],
-        help="порты хоста, которые должны быть закрыты (Phoenix 6006 откроем в P14)",
+        default=[8080, 5432],
+        help="порты хоста, которые должны быть закрыты (6006 открыт для Phoenix, P14)",
     )
     parser.add_argument("--json", action="store_true", help="вывести результат в JSON")
     args = parser.parse_args(argv)

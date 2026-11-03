@@ -5,6 +5,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 
 from ai_task_manager.config import Settings
+from ai_task_manager.observability.trajectory import trajectory_node
 
 from .nodes import finish_node
 from .router import route_request
@@ -99,6 +100,7 @@ def build_graph(
             "preference_id": None,
             "agent_error_counts": {},
             "model_retry_counts": {},
+            "trajectory": [],
         }
 
     def remember_reply(state: WorkflowState) -> dict[str, Any]:
@@ -116,13 +118,18 @@ def build_graph(
             ]
         }
 
+    def add_node(name: str, node: Node) -> None:
+        # P14: каждый шаг (кроме prepare, который начинает траекторию заново) попадает в
+        # state["trajectory"] с длительностью и кратким итогом
+        graph.add_node(name, trajectory_node(name, node))
+
     graph.add_node("prepare", prepare)
     if preference_answer is not None:
-        graph.add_node("preference_answer", preference_answer)
+        add_node("preference_answer", preference_answer)
     if propose_preference is not None:
-        graph.add_node("propose_preference", propose_preference)
+        add_node("propose_preference", propose_preference)
     if decision is not None:
-        graph.add_node(
+        add_node(
             "decision",
             _count_agent_error(
                 "decision",
@@ -130,8 +137,8 @@ def build_graph(
                 lambda update: update.get("decision_error") is not None,
             ),
         )
-    graph.add_node("route", lambda state: route_request(state, settings))
-    graph.add_node(
+    add_node("route", lambda state: route_request(state, settings))
+    add_node(
         "analyst",
         _count_agent_error(
             "analyst",
@@ -139,7 +146,7 @@ def build_graph(
             lambda update: str(update.get("error") or "").startswith("analyst:"),
         ),
     )
-    graph.add_node(
+    add_node(
         "planner",
         _count_agent_error(
             "planner",
@@ -147,7 +154,7 @@ def build_graph(
             lambda update: (update.get("plan") or {}).get("source") == "fallback",
         ),
     )
-    graph.add_node(
+    add_node(
         "validator",
         _count_agent_error(
             "validator",
@@ -155,10 +162,10 @@ def build_graph(
             lambda update: (update.get("verdict") or {}).get("source") == "unavailable",
         ),
     )
-    graph.add_node("finish", finish_node)
+    add_node("finish", finish_node)
     if act is not None:
-        graph.add_node("act", act)
-    graph.add_node("remember_reply", remember_reply)
+        add_node("act", act)
+    add_node("remember_reply", remember_reply)
 
     def after_analyst(state: WorkflowState) -> str:
         analysis = state.get("analysis")
