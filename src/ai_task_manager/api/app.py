@@ -12,8 +12,10 @@ from ai_task_manager.api.actions import router as actions_router
 from ai_task_manager.api.chat import router as chat_router
 from ai_task_manager.api.preferences import router as preferences_router
 from ai_task_manager.api.tasks import router as tasks_router
+from ai_task_manager.config import get_settings
 from ai_task_manager.db.database import init_db
 from ai_task_manager.observability.metrics import MetricsRegistry
+from ai_task_manager.observability.setup import setup_observability
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -22,6 +24,8 @@ logger = logging.getLogger("uvicorn.error")
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     init_db()  # при запуске: создать таблицы если их нет
+    # P14: логи в ATM_LOG_DIR и трейсы в Phoenix — до первого запроса, в том числе /actions
+    setup_observability(get_settings())
     yield  # после этого FastAPI начинает обслуживать запросы
 
 

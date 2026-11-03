@@ -17,9 +17,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ai_task_manager.agents.contracts import Plan
+from ai_task_manager.agents.contracts import Operation, Plan
 from ai_task_manager.db import crud_func
 from ai_task_manager.db.preferences import update_preference
+from ai_task_manager.observability.tracing import log_tools_event, tool_call
 
 _CREATE_ARGS = {
     "title",
@@ -128,6 +129,11 @@ def execute_plan(
         raise ValueError("План ждёт уточнения от пользователя, выполнять нечего")
     reasons = confirmation_reasons(connection, plan)
     if (reasons or plan.requires_confirmation) and not confirmed:
+        log_tools_event(
+            "tool_blocked_without_confirmation",
+            tools=[op.tool for op in plan.operations],
+            reasons=reasons,
+        )
         raise ConfirmationRequired(
             "Нужно подтверждение пользователя: " + "; ".join(reasons or ["так решил планировщик"])
         )
@@ -135,70 +141,85 @@ def execute_plan(
     result = ExecutionResult()
     refs: dict[str, int] = {}
     for op in plan.operations:
-        args = op.args
-        if op.tool == "list_tasks":
-            result.tasks = crud_func.list_tasks(connection)
-
-        elif op.tool == "create_task":
-            values = {key: value for key, value in args.items() if key in _CREATE_ARGS}
-            title = values.pop("title")
-            task_id = crud_func.create_task(connection, title, **values)
-            if op.ref:
-                refs[op.ref] = task_id
-            result.created.append(CreatedTask(ref=op.ref, task_id=task_id, title=title.strip()))
-
-        elif op.tool == "update_task":
-            task_id = _resolve(args.get("task_id"), refs)
-            if not crud_func.update_task(connection, task_id, dict(args.get("updates") or {})):
-                raise ValueError(f"Задача #{task_id} не найдена")
-            result.updated.append(task_id)
-
-        elif op.tool == "change_task_status":
-            task_id = _resolve(args.get("task_id"), refs)
-            status = args.get("status")
-            blocked = status == "done" and crud_func.get_unfinished_predecessors(
-                connection, task_id
-            )
-            changed = (
-                _force_complete(connection, task_id)
-                if blocked
-                else crud_func.change_task_status(connection, task_id, status)
-            )
-            if not changed:
-                raise ValueError(f"Не удалось сменить статус задачи #{task_id}")
-            result.status_changed.append((task_id, status))
-
-        elif op.tool == "delete_task":
-            task_id = _resolve(args.get("task_id"), refs)
-            if not crud_func.delete_task(connection, task_id):
-                raise ValueError(f"Задача #{task_id} не найдена")
-            result.deleted.append(task_id)
-
-        elif op.tool == "add_dependency":
-            pair = (
-                _resolve(args.get("predecessor_task_id"), refs),
-                _resolve(args.get("successor_task_id"), refs),
-            )
-            crud_func.add_dependency(connection, *pair)
-            result.dependencies_added.append(pair)
-
-        elif op.tool == "remove_dependency":
-            pair = (
-                _resolve(args.get("predecessor_task_id"), refs),
-                _resolve(args.get("successor_task_id"), refs),
-            )
-            crud_func.remove_dependency(connection, *pair)
-            result.dependencies_removed.append(pair)
-
-        elif op.tool == "update_preference":
-            for kind, value in args.items():
-                saved = update_preference(connection, kind, value)
-                shown = ", ".join(saved.value) if isinstance(saved.value, list) else saved.value
-                result.preferences.append(f"{_PREFERENCE_NAMES.get(kind, kind)} — {shown}")
-
-        else:  # pragma: no cover — ToolName в контракте не даст сюда попасть
-            raise ValueError(f"Неизвестная операция {op.tool}")
+        # P14: каждый вызов Tool — спан в Phoenix и JSON-строка в atm.log
+        with tool_call(op.tool, op.args) as out:
+            out["result"] = _run_operation(connection, op, refs, result)
     return result
+
+
+def _run_operation(
+    connection: sqlite3.Connection, op: Operation, refs: dict[str, int], result: ExecutionResult
+) -> dict[str, Any]:
+    """Одна операция плана; возвращает краткий итог для лога и трейса."""
+    args = op.args
+    if op.tool == "list_tasks":
+        result.tasks = crud_func.list_tasks(connection)
+        return {"count": len(result.tasks)}
+
+    if op.tool == "create_task":
+        values = {key: value for key, value in args.items() if key in _CREATE_ARGS}
+        title = values.pop("title")
+        task_id = crud_func.create_task(connection, title, **values)
+        if op.ref:
+            refs[op.ref] = task_id
+        result.created.append(CreatedTask(ref=op.ref, task_id=task_id, title=title.strip()))
+        return {"task_id": task_id, "ref": op.ref}
+
+    if op.tool == "update_task":
+        task_id = _resolve(args.get("task_id"), refs)
+        if not crud_func.update_task(connection, task_id, dict(args.get("updates") or {})):
+            raise ValueError(f"Задача #{task_id} не найдена")
+        result.updated.append(task_id)
+        return {"task_id": task_id}
+
+    if op.tool == "change_task_status":
+        task_id = _resolve(args.get("task_id"), refs)
+        status = args.get("status")
+        blocked = status == "done" and crud_func.get_unfinished_predecessors(connection, task_id)
+        changed = (
+            _force_complete(connection, task_id)
+            if blocked
+            else crud_func.change_task_status(connection, task_id, status)
+        )
+        if not changed:
+            raise ValueError(f"Не удалось сменить статус задачи #{task_id}")
+        result.status_changed.append((task_id, status))
+        return {"task_id": task_id, "status": status, "forced": bool(blocked)}
+
+    if op.tool == "delete_task":
+        task_id = _resolve(args.get("task_id"), refs)
+        if not crud_func.delete_task(connection, task_id):
+            raise ValueError(f"Задача #{task_id} не найдена")
+        result.deleted.append(task_id)
+        return {"task_id": task_id}
+
+    if op.tool == "add_dependency":
+        pair = (
+            _resolve(args.get("predecessor_task_id"), refs),
+            _resolve(args.get("successor_task_id"), refs),
+        )
+        crud_func.add_dependency(connection, *pair)
+        result.dependencies_added.append(pair)
+        return {"predecessor": pair[0], "successor": pair[1]}
+
+    if op.tool == "remove_dependency":
+        pair = (
+            _resolve(args.get("predecessor_task_id"), refs),
+            _resolve(args.get("successor_task_id"), refs),
+        )
+        crud_func.remove_dependency(connection, *pair)
+        result.dependencies_removed.append(pair)
+        return {"predecessor": pair[0], "successor": pair[1]}
+
+    if op.tool == "update_preference":
+        for kind, value in args.items():
+            saved = update_preference(connection, kind, value)
+            shown = ", ".join(saved.value) if isinstance(saved.value, list) else saved.value
+            result.preferences.append(f"{_PREFERENCE_NAMES.get(kind, kind)} — {shown}")
+        return {"saved": list(args)}
+
+    # pragma: no cover — ToolName в контракте не даст сюда попасть
+    raise ValueError(f"Неизвестная операция {op.tool}")
 
 
 _PREFERENCE_NAMES = {
@@ -213,8 +234,9 @@ def run_plan(connection: sqlite3.Connection, plan: Plan) -> ExecutionResult:
     connection.execute("BEGIN IMMEDIATE")
     try:
         result = execute_plan(connection, plan)
-    except BaseException:
+    except BaseException as exc:
         connection.rollback()
+        log_tools_event("tool_plan_rolled_back", error=str(exc))
         raise
     if plan.writes:
         connection.commit()

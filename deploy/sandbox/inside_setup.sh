@@ -75,6 +75,9 @@ ATM_DATABASE_PATH=/var/lib/atm/tasks.db
 # 127.0.0.1 хоста из песочницы недоступен; прокси переводит этот адрес в localhost хоста,
 # а политика сети пропускает только порт Ollama.
 ATM_OLLAMA_BASE_URL=http://host.docker.internal:11434
+# Наблюдаемость (P14): логи и траектории — рядом с данными; трейсы — в Phoenix на хосте
+ATM_LOG_DIR=/var/lib/atm/logs
+ATM_PHOENIX_ENDPOINT=http://host.docker.internal:6006/v1/traces
 EOF
 chown -R root:root "$APP_DIR"
 chmod -R u=rwX,go=rX "$APP_DIR"

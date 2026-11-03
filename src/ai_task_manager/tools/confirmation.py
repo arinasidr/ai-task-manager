@@ -27,6 +27,7 @@ from ai_task_manager.agents.planner import _deadline_text
 from ai_task_manager.agents.validator import Validator
 from ai_task_manager.db import crud_func
 from ai_task_manager.db.database import connect
+from ai_task_manager.observability.tracing import INPUT, OUTPUT, SPAN_KIND, tracer
 from ai_task_manager.tools.executor import (
     ExecutionResult,
     confirmation_reasons,
@@ -192,7 +193,12 @@ def confirm_plan_action(
         if issues:
             raise ValueError("План больше не корректен: " + "; ".join(d for _, d in issues))
 
-        result = execute_plan(connection, plan, confirmed=True)
+        # P14: подтверждение приходит отдельным HTTP-запросом — свой корневой спан
+        with tracer.start_as_current_span("confirm_action") as span:
+            span.set_attribute(SPAN_KIND, "AGENT")
+            span.set_attribute(INPUT, action_id)
+            result = execute_plan(connection, plan, confirmed=True)
+            span.set_attribute(OUTPUT, result.summary())
 
         cursor = connection.execute(
             """

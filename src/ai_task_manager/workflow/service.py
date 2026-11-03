@@ -11,6 +11,7 @@ propose_preference (P12: предложить запомнить замечен�
 """
 
 import sqlite3
+import time
 import uuid
 from collections.abc import Callable
 from datetime import datetime
@@ -27,6 +28,14 @@ from ai_task_manager.agents.validator import make_validator_node
 from ai_task_manager.config import Settings
 from ai_task_manager.db.database import connect as db_connect
 from ai_task_manager.memory.checkpoint import run_turn
+from ai_task_manager.observability.setup import setup_observability
+from ai_task_manager.observability.tracing import (
+    OUTPUT,
+    SESSION,
+    chat_turn_span,
+    current_trace_id,
+)
+from ai_task_manager.observability.trajectory import write_trajectory
 from ai_task_manager.tools.confirmation import make_action_node
 
 from .decision import make_decision_node
@@ -53,6 +62,10 @@ class ChatResult(BaseModel):
     decision_error: str | None = None
     agent_error_counts: dict[str, int] = Field(default_factory=dict)
     model_retry_counts: dict[str, int] = Field(default_factory=dict)
+    # P14: пройденные узлы графа и связь с трейсом в Phoenix
+    trajectory: list[dict[str, Any]] = Field(default_factory=list)
+    trace_id: str | None = None
+    duration_ms: float | None = None
 
 
 def ollama_factory(settings: Settings) -> Callable[[str], JsonLLM]:
@@ -76,6 +89,7 @@ def create_workflow(
     """Граф из настоящих агентов. С `checkpointer` (A12) граф помнит диалог по conversation_id."""
     connect = connect or (lambda: db_connect(settings.database_path))
     llm_for = llm_for or ollama_factory(settings)
+    setup_observability(settings)  # P14: логи и трейсы, если заданы в настройках
     return build_graph(
         settings,
         analyst=make_analyst_node(llm_for=llm_for, connect=connect),
@@ -104,12 +118,36 @@ def run_chat(
         "current_datetime": now.isoformat(),
         "timezone": settings.timezone,
     }
-    if isinstance(graph.checkpointer, SqliteSaver):
-        # память диалога (A11): история по conversation_id, ходы одного диалога по очереди
-        state = run_turn(graph, request)
-    else:
-        request["conversation_id"] = conversation_id or str(uuid.uuid4())
-        state = graph.invoke(request)
+    started = time.perf_counter()
+    # P14: корневой спан хода — внутри него узлы графа, вызовы моделей и Tools
+    with chat_turn_span(message, conversation_id) as span:
+        if isinstance(graph.checkpointer, SqliteSaver):
+            # память диалога (A11): история по conversation_id, ходы одного диалога по очереди
+            state = run_turn(graph, request)
+        else:
+            request["conversation_id"] = conversation_id or str(uuid.uuid4())
+            state = graph.invoke(request)
+        span.set_attribute(SESSION, state["conversation_id"])
+        span.set_attribute(OUTPUT, state.get("reply") or "")
+        trace_id = current_trace_id()
+    duration_ms = round((time.perf_counter() - started) * 1000, 1)
+    trajectory = state.get("trajectory") or []
+    write_trajectory(
+        settings,
+        {
+            "conversation_id": state["conversation_id"],
+            "trace_id": trace_id,
+            "request": message,
+            "reply": (state.get("reply") or "")[:500],
+            "route": state.get("route"),
+            "duration_ms": duration_ms,
+            "action_id": state.get("pending_action_id"),
+            "error": state.get("error"),
+            "agent_error_counts": state.get("agent_error_counts") or {},
+            "model_retry_counts": state.get("model_retry_counts") or {},
+            "steps": trajectory,
+        },
+    )
     return ChatResult(
         conversation_id=state["conversation_id"],
         reply=state.get("reply") or "",
@@ -130,4 +168,7 @@ def run_chat(
         decision_error=state.get("decision_error"),
         agent_error_counts=state.get("agent_error_counts") or {},
         model_retry_counts=state.get("model_retry_counts") or {},
+        trajectory=trajectory,
+        trace_id=trace_id,
+        duration_ms=duration_ms,
     )

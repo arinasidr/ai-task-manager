@@ -75,6 +75,8 @@ Step "3. Разрешения сети только для этой песочн
 # Ollama на хосте: из песочницы адрес host.docker.internal, прокси переводит его в localhost.
 # Песочница в sbx policy задаётся флагом --sandbox (позиционное имя в новых версиях убрано).
 Invoke-Sbx policy allow network --sandbox $Name "localhost:11434"
+# Phoenix на хосте (P14): приложение отправляет трейсы по OTLP/HTTP на host.docker.internal:6006
+Invoke-Sbx policy allow network --sandbox $Name "localhost:6006"
 foreach ($h in $TemporaryHosts) { Invoke-Sbx policy allow network --sandbox $Name $h }
 
 try {
