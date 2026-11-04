@@ -13,5 +13,7 @@ arize-phoenix-otel>=0.17
 openinference-instrumentation-langchain>=0.1.80
 pytest>=8.0
 ruff>=0.6
+# замеры ресурсов в бенчмарке производительности (P16)
+psutil>=5.9
 # сам проект (чтобы работали import ai_task_manager и команда atm)
 -e .
