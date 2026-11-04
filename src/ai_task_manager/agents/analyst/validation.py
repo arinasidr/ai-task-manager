@@ -1,6 +1,8 @@
 import re
 
-from .schema import AnalystInput, AnalystResult
+from ai_task_manager.memory.inference import from_text, normalize_value
+
+from .schema import AnalystInput, AnalystResult, ExtractedPreference
 
 _MARKED_ID_RE = re.compile(r"(?:[#№]|\bID\s*[:#№]?)\s*(\d+)\b", re.IGNORECASE)
 _TASK_IDS_RE = re.compile(
@@ -15,6 +17,14 @@ _CONTEXT_REFERENCE_RE = re.compile(
 )
 _ID_QUESTION_RE = re.compile(
     r"\b(?:укажи|назови|напиши|какой|нужен)\b.{0,60}\b(?:номер|id|идентификатор)\b",
+    re.IGNORECASE,
+)
+_BARE_ANSWER_RE = re.compile(
+    r"\s*(?:да|нет|ага|угу|ок|окей|yes|no)\s*[.!?]?\s*",
+    re.IGNORECASE,
+)
+_MEMORY_COMMAND_RE = re.compile(
+    r"\b(?:запомни|запомнить|запиши|сохрани|учитывай)\b",
     re.IGNORECASE,
 )
 
@@ -39,6 +49,35 @@ def _contextual_task_ids(data: AnalystInput) -> set[int]:
     return set()
 
 
+def _ground_preference(data: AnalystInput, result: AnalystResult) -> AnalystResult:
+    """Сверяет предпочтение модели с текущим запросом пользователя."""
+    question = AnalystResult(
+        intent="clarification_required",
+        missing_fields=["preference"],
+        clarification_question="Уточните, какое предпочтение нужно запомнить.",
+    )
+
+    if not _MEMORY_COMMAND_RE.search(data.request):
+        return question
+
+    candidates = from_text(data.request)
+    if len(candidates) == 1:
+        candidate = candidates[0]
+        return result.model_copy(
+            update={
+                "preference": ExtractedPreference(
+                    kind=candidate.kind,
+                    value=candidate.value,
+                )
+            }
+        )
+
+    preference = result.preference
+    if preference is None or normalize_value(preference.kind, preference.value) is None:
+        return question
+    return result
+
+
 class UnknownTaskIdsError(ValueError):
     def __init__(self, unknown_ids: set[int], user_supplied_ids: set[int]) -> None:
         self.unknown_ids = unknown_ids
@@ -47,7 +86,19 @@ class UnknownTaskIdsError(ValueError):
 
 
 def validate_task_references(data: AnalystInput, result: AnalystResult) -> AnalystResult:
-    """Отклоняет ссылки модели на задачи, которых нет во входном контексте"""
+    """Проверяет ID и не даёт модели повторить действие из истории по одному «да»."""
+    if _BARE_ANSWER_RE.fullmatch(data.request) and result.intent not in {
+        "clarification_required",
+        "unsupported",
+    }:
+        return AnalystResult(
+            intent="clarification_required",
+            missing_fields=["request"],
+            clarification_question=(
+                "По одному ответу «да» действие не выполняется. Уточните запрос."
+            ),
+        )
+
     known_ids = {task.id for task in data.tasks}
 
     referenced_ids = set(result.task_ids)
@@ -72,4 +123,8 @@ def validate_task_references(data: AnalystInput, result: AnalystResult) -> Analy
                 missing_fields=["task_id"],
                 clarification_question="Укажи номер задачи, которую нужно изменить или удалить.",
             )
+
+    if result.intent == "update_preference" and not result.tasks:
+        return _ground_preference(data, result)
+
     return result

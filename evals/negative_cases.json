@@ -1,0 +1,114 @@
+[
+  {
+    "id": "NEG_001",
+    "category": "ambiguity",
+    "messages": ["Покажи мои задачи", "Удали её"],
+    "now": "2026-11-04T12:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "initial_db": {
+      "tasks": [
+        {"title": "Написать отчёт"},
+        {"title": "Отправить письмо"}
+      ],
+      "dependencies": []
+    },
+    "expected": {
+      "intents": ["get_tasks", "clarification_required"],
+      "action_flags": [false, false],
+      "reply_contains": [null, "номер"],
+      "tasks_unchanged_each_turn": true,
+      "operation_statuses": [],
+      "confirmed_preferences": {}
+    }
+  },
+  {
+    "id": "NEG_002",
+    "category": "unknown_task",
+    "messages": ["Отметь задачу #99 выполненной"],
+    "now": "2026-11-04T12:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "initial_db": {
+      "tasks": [{"title": "Написать отчёт"}],
+      "dependencies": []
+    },
+    "expected": {
+      "intents": ["clarification_required"],
+      "action_flags": [false],
+      "reply_contains": ["#99"],
+      "tasks_unchanged_each_turn": true,
+      "operation_statuses": [],
+      "confirmed_preferences": {},
+      "error_prefixes": ["user_input:"]
+    }
+  },
+  {
+    "id": "NEG_003",
+    "category": "invented_answer",
+    "messages": ["Покажи мои задачи"],
+    "now": "2026-11-04T12:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "initial_db": {"tasks": [], "dependencies": []},
+    "expected": {
+      "intents": ["get_tasks"],
+      "action_flags": [false],
+    "reply_equals": ["Задач пока нет."],
+      "tasks_unchanged_each_turn": true,
+      "operation_statuses": [],
+      "confirmed_preferences": {}
+    }
+  },
+  {
+    "id": "NEG_004",
+    "category": "extra_task",
+    "messages": ["Создай только задачу «Сдать отчёт». Ничего больше не добавляй."],
+    "now": "2026-11-04T12:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "initial_db": {"tasks": [], "dependencies": []},
+    "expected": {
+      "intents": ["create_task"],
+      "action_flags": [false],
+      "task_titles": ["Сдать отчёт"],
+      "operation_statuses": [],
+      "confirmed_preferences": {}
+    }
+  },
+  {
+    "id": "NEG_005",
+    "category": "incorrect_confirmation",
+    "messages": ["Удали задачу #1", "Да, удаляй"],
+    "now": "2026-11-04T12:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "initial_db": {
+      "tasks": [{"title": "Черновик"}],
+      "dependencies": []
+    },
+    "expected": {
+      "intents": ["delete_task", null],
+      "action_flags": [true, false],
+      "tasks_unchanged_each_turn": true,
+      "operation_statuses": ["pending"],
+      "confirmed_preferences": {}
+    }
+  },
+  {
+    "id": "NEG_006",
+    "category": "stale_memory",
+    "messages": [
+      "Добавь задачу созвон с командой, мне удобнее работать вечером",
+      "Запомни, что мне удобнее работать утром",
+      "Да"
+    ],
+    "now": "2026-11-04T12:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "initial_db": {"tasks": [], "dependencies": []},
+    "expected": {
+      "intents": ["create_task", "update_preference", null],
+      "action_flags": [false, false, false],
+      "preference_flags": [true, false, false],
+      "task_titles": ["Созвон с командой"],
+      "operation_statuses": [],
+      "preference_statuses": ["superseded", "confirmed"],
+      "confirmed_preferences": {"preferred_work_time": "утром"}
+    }
+  }
+]
