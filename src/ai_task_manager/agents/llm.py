@@ -56,6 +56,8 @@ class OllamaJsonLLM:
         # Режим рассуждений выключаем: он сильно увеличивает задержку. У моделей без этого режима
         # Ollama отвечает ошибкой на сам параметр, тогда повторяем запрос без него.
         self._reasoning: bool | None = False
+        # Метаданные последнего ответа Ollama: токены и время (P16, замеры скорости модели)
+        self.last_metadata: dict[str, Any] = {}
 
     def _chat(self, schema: dict[str, Any]) -> ChatOllama:
         return ChatOllama(
@@ -84,4 +86,5 @@ class OllamaJsonLLM:
             raise
         except Exception as exc:
             raise LLMError(f"Ошибка вызова модели {self.model}: {exc}") from exc
+        self.last_metadata = dict(getattr(reply, "response_metadata", None) or {})
         return parse_json_object(str(reply.content))

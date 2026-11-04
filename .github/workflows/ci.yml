@@ -29,3 +29,15 @@ jobs:
 
       - name: Tests (pytest)
         run: pytest
+
+      # P16: бенчмарк производительности на моках — стабильность workflow и время обработки
+      # без моделей. Падает, если исход хода не совпал с ожидаемым, есть сбои или p95 > 1,5 с.
+      - name: Performance benchmark (mock)
+        run: python -m perf.run --mode mock --repeats 3 --check --output perf/results/ci-mock.json
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-mock
+          path: perf/results/ci-mock.*
