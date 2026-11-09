@@ -1,0 +1,2437 @@
+{
+ "mode": "live",
+ "started_at": "2026-11-04T14:27:39+00:00",
+ "repeats": 2,
+ "turns_per_repeat": 10,
+ "settings": {
+  "analyst_model": "gemma4:e2b",
+  "planner_model": "gemma4:e2b",
+  "fast_model": "qwen3:1.7b",
+  "validator_model": "ministral-3:3b",
+  "decision_model": "tev1:0.8b-q8_0"
+ },
+ "configs": {
+  "routing": {
+   "turns": 20,
+   "expected_outcomes": 20,
+   "success_rate": 1.0,
+   "crashes": 0,
+   "errors": 0,
+   "agent_errors": {
+    "decision": 18
+   },
+   "model_retries": {},
+   "validator_retries": 0,
+   "fallback_plans": 0,
+   "unstable_turns": [],
+   "latency_all": {
+    "n": 20,
+    "p50_ms": 17001.894749933854,
+    "p95_ms": 41285.41890019551,
+    "max_ms": 60146.0241000168,
+    "mean_ms": 21288.410154997837
+   },
+   "latency_by_kind": {
+    "created": {
+     "n": 6,
+     "p50_ms": 34649.71080003306,
+     "p95_ms": 60146.0241000168,
+     "max_ms": 60146.0241000168,
+     "mean_ms": 39785.748583381064
+    },
+    "listed": {
+     "n": 6,
+     "p50_ms": 12394.493849948049,
+     "p95_ms": 13015.460799913853,
+     "max_ms": 13015.460799913853,
+     "mean_ms": 12286.805233336054
+    },
+    "preference_saved": {
+     "n": 2,
+     "p50_ms": 23.445049999281764,
+     "p95_ms": 27.39639999344945,
+     "max_ms": 27.39639999344945,
+     "mean_ms": 23.445049999281764
+    },
+    "ordered": {
+     "n": 2,
+     "p50_ms": 28706.025249906816,
+     "p95_ms": 28854.61279982701,
+     "max_ms": 28854.61279982701,
+     "mean_ms": 28706.025249906816
+    },
+    "pending": {
+     "n": 2,
+     "p50_ms": 21538.673599949107,
+     "p95_ms": 22089.01849994436,
+     "max_ms": 22089.01849994436,
+     "mean_ms": 21538.673599949107
+    },
+    "clarification": {
+     "n": 2,
+     "p50_ms": 6398.29619997181,
+     "p95_ms": 6462.59790007025,
+     "max_ms": 6462.59790007025,
+     "mean_ms": 6398.29619997181
+    }
+   },
+   "latency_by_node": {
+    "preference_answer": {
+     "n": 20,
+     "p50_ms": 0.0,
+     "p95_ms": 7.6,
+     "max_ms": 14.0,
+     "mean_ms": 1.08
+    },
+    "decision": {
+     "n": 18,
+     "p50_ms": 2395.6000000000004,
+     "p95_ms": 2546.0,
+     "max_ms": 2546.0,
+     "mean_ms": 2405.6277777777777
+    },
+    "route": {
+     "n": 18,
+     "p50_ms": 0.0,
+     "p95_ms": 0.0,
+     "max_ms": 0.0,
+     "mean_ms": 0.0
+    },
+    "analyst": {
+     "n": 18,
+     "p50_ms": 18070.4,
+     "p95_ms": 36018.8,
+     "max_ms": 36018.8,
+     "mean_ms": 15224.816666666668
+    },
+    "planner": {
+     "n": 16,
+     "p50_ms": 202.85000000000002,
+     "p95_ms": 7938.7,
+     "max_ms": 7938.7,
+     "mean_ms": 1122.01875
+    },
+    "validator": {
+     "n": 16,
+     "p50_ms": 146.1,
+     "p95_ms": 21172.7,
+     "max_ms": 21172.7,
+     "mean_ms": 5387.3125
+    },
+    "act": {
+     "n": 16,
+     "p50_ms": 41.8,
+     "p95_ms": 128.4,
+     "max_ms": 128.4,
+     "mean_ms": 56.35625
+    },
+    "finish": {
+     "n": 18,
+     "p50_ms": 0.0,
+     "p95_ms": 0.0,
+     "max_ms": 0.0,
+     "mean_ms": 0.0
+    },
+    "propose_preference": {
+     "n": 18,
+     "p50_ms": 12.1,
+     "p95_ms": 170.0,
+     "max_ms": 170.0,
+     "mean_ms": 47.42777777777778
+    },
+    "remember_reply": {
+     "n": 20,
+     "p50_ms": 0.0,
+     "p95_ms": 0.0,
+     "max_ms": 0.0,
+     "mean_ms": 0.0
+    }
+   },
+   "models": {
+    "gemma4:e2b": {
+     "calls": 14,
+     "failed": 0,
+     "mean_s": 16.474917528602028,
+     "max_s": 36.003903000149876,
+     "gen_tokens_per_s": 62.44192382053142,
+     "prompt_tokens_per_s": 1541.8449064981444,
+     "load_s_total": 166.051355,
+     "loads_over_1s": 10
+    },
+    "ministral-3:3b": {
+     "calls": 6,
+     "failed": 0,
+     "mean_s": 14.077367349993438,
+     "max_s": 21.020864800084382,
+     "gen_tokens_per_s": 20.39966774041168,
+     "prompt_tokens_per_s": 1479.2942228905958,
+     "load_s_total": 55.1797653,
+     "loads_over_1s": 6
+    },
+    "qwen3:1.7b": {
+     "calls": 6,
+     "failed": 0,
+     "mean_s": 9.322021699937372,
+     "max_s": 10.030910499859601,
+     "gen_tokens_per_s": 93.10728887580657,
+     "prompt_tokens_per_s": 3342.7452965156867,
+     "load_s_total": 26.1948242,
+     "loads_over_1s": 6
+    }
+   }
+  },
+  "single": {
+   "turns": 20,
+   "expected_outcomes": 20,
+   "success_rate": 1.0,
+   "crashes": 0,
+   "errors": 0,
+   "agent_errors": {
+    "decision": 18
+   },
+   "model_retries": {},
+   "validator_retries": 0,
+   "fallback_plans": 0,
+   "unstable_turns": [],
+   "latency_all": {
+    "n": 20,
+    "p50_ms": 12815.632049925625,
+    "p95_ms": 34571.81939994916,
+    "max_ms": 368149.48619995266,
+    "mean_ms": 32192.18585997587
+   },
+   "latency_by_kind": {
+    "created": {
+     "n": 6,
+     "p50_ms": 26868.10494994279,
+     "p95_ms": 368149.48619995266,
+     "max_ms": 368149.48619995266,
+     "mean_ms": 82408.9246999162
+    },
+    "listed": {
+     "n": 6,
+     "p50_ms": 6615.768849966116,
+     "p95_ms": 20945.015399949625,
+     "max_ms": 20945.015399949625,
+     "mean_ms": 11244.677466650804
+    },
+    "preference_saved": {
+     "n": 2,
+     "p50_ms": 24.285699939355254,
+     "p95_ms": 27.148399967700243,
+     "max_ms": 27.148399967700243,
+     "mean_ms": 24.285699939355254
+    },
+    "ordered": {
+     "n": 2,
+     "p50_ms": 28091.991150053218,
+     "p95_ms": 28468.262700131163,
+     "max_ms": 28468.262700131163,
+     "mean_ms": 28091.991150053218
+    },
+    "pending": {
+     "n": 2,
+     "p50_ms": 6485.865149996243,
+     "p95_ms": 6584.122000029311,
+     "max_ms": 6584.122000029311,
+     "mean_ms": 6485.865149996243
+    },
+    "clarification": {
+     "n": 2,
+     "p50_ms": 6358.910100068897,
+     "p95_ms": 6420.753600075841,
+     "max_ms": 6420.753600075841,
+     "mean_ms": 6358.910100068897
+    }
+   },
+   "latency_by_node": {
+    "preference_answer": {
+     "n": 20,
+     "p50_ms": 0.0,
+     "p95_ms": 10.4,
+     "max_ms": 14.2,
+     "mean_ms": 1.23
+    },
+    "decision": {
+     "n": 18,
+     "p50_ms": 2416.45,
+     "p95_ms": 2458.7,
+     "max_ms": 2458.7,
+     "mean_ms": 2409.105555555556
+    },
+    "route": {
+     "n": 18,
+     "p50_ms": 0.0,
+     "p95_ms": 0.0,
+     "max_ms": 0.0,
+     "mean_ms": 0.0
+    },
+    "analyst": {
+     "n": 18,
+     "p50_ms": 3546.6,
+     "p95_ms": 352093.0,
+     "max_ms": 352093.0,
+     "mean_ms": 27813.222222222223
+    },
+    "planner": {
+     "n": 16,
+     "p50_ms": 183.35,
+     "p95_ms": 7611.2,
+     "max_ms": 7611.2,
+     "mean_ms": 1082.20625
+    },
+    "validator": {
+     "n": 16,
+     "p50_ms": 147.55,
+     "p95_ms": 12922.0,
+     "max_ms": 12922.0,
+     "mean_ms": 4842.6
+    },
+    "act": {
+     "n": 16,
+     "p50_ms": 66.15,
+     "p95_ms": 145.9,
+     "max_ms": 145.9,
+     "mean_ms": 65.86875
+    },
+    "finish": {
+     "n": 18,
+     "p50_ms": 0.0,
+     "p95_ms": 0.0,
+     "max_ms": 0.0,
+     "mean_ms": 0.0
+    },
+    "propose_preference": {
+     "n": 18,
+     "p50_ms": 8.05,
+     "p95_ms": 160.3,
+     "max_ms": 160.3,
+     "mean_ms": 45.42777777777778
+    },
+    "remember_reply": {
+     "n": 20,
+     "p50_ms": 0.0,
+     "p95_ms": 0.0,
+     "max_ms": 0.0,
+     "mean_ms": 0.0
+    }
+   },
+   "models": {
+    "gemma4:e2b": {
+     "calls": 20,
+     "failed": 0,
+     "mean_s": 25.642194919963366,
+     "max_s": 351.91477619996294,
+     "gen_tokens_per_s": 64.11405612385181,
+     "prompt_tokens_per_s": 2091.384472671289,
+     "load_s_total": 97.5893033,
+     "loads_over_1s": 7
+    },
+    "ministral-3:3b": {
+     "calls": 6,
+     "failed": 0,
+     "mean_s": 12.66114201664459,
+     "max_s": 12.792389700189233,
+     "gen_tokens_per_s": 20.61443912620546,
+     "prompt_tokens_per_s": 1487.01688537004,
+     "load_s_total": 46.7596615,
+     "loads_over_1s": 6
+    }
+   }
+  }
+ },
+ "resources": {
+  "routing": {
+   "available": true,
+   "samples": 327,
+   "cpu_percent": {
+    "mean": 20.359021406727827,
+    "max": 72.4
+   },
+   "ram_used_mb": {
+    "mean": 12111.47345661315,
+    "max": 14048.140625
+   },
+   "app_rss_mb": {
+    "mean": 109.37737719801223,
+    "max": 111.71484375
+   },
+   "ollama_rss_mb": {
+    "mean": 127.92682052752293,
+    "max": 131.0703125
+   }
+  },
+  "single": {
+   "available": true,
+   "samples": 233,
+   "cpu_percent": {
+    "mean": 19.218884120171673,
+    "max": 60.0
+   },
+   "ram_used_mb": {
+    "mean": 12051.076113197425,
+    "max": 13421.8046875
+   },
+   "app_rss_mb": {
+    "mean": 111.47709898068669,
+    "max": 114.8984375
+   },
+   "ollama_rss_mb": {
+    "mean": 129.69910139484978,
+    "max": 131.42578125
+   }
+  }
+ },
+ "loaded_models": {
+  "routing": [
+   {
+    "model": "qwen3:1.7b",
+    "size_mb": 1628,
+    "vram_mb": 1628
+   }
+  ],
+  "single": [
+   {
+    "model": "gemma4:e2b",
+    "size_mb": 300,
+    "vram_mb": 300
+   }
+  ]
+ },
+ "turns": [
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 0,
+   "message": "Добавь задачу подготовить презентацию к пятнице",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 60146.0241000168,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "17470d135eb035e5ce1640326d2450a0",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2381.4,
+    "route": 0.0,
+    "analyst": 36018.8,
+    "planner": 240.3,
+    "validator": 21172.7,
+    "act": 126.2,
+    "finish": 0.0,
+    "propose_preference": 110.4,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 1,
+   "message": "Добавь срочную задачу исправить баг в авторизации на завтра",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 34973.809000104666,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "061b0eac09e7cb6cf7adde37a1b15d61",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2450.9,
+    "route": 0.0,
+    "analyst": 19090.6,
+    "planner": 140.6,
+    "validator": 12899.9,
+    "act": 128.4,
+    "finish": 0.0,
+    "propose_preference": 91.9,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 2,
+   "message": "Покажи задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 11450.056100031361,
+   "route": "simple_read",
+   "models": {
+    "analyst": "qwen3:1.7b",
+    "planner": "qwen3:1.7b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "2c26738f12952a3ee31c0a6aa046e061",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2427.7,
+    "route": 0.0,
+    "analyst": 8960.8,
+    "planner": 12.4,
+    "validator": 2.2,
+    "act": 9.5,
+    "finish": 0.0,
+    "propose_preference": 9.1,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 3,
+   "message": "Добавь задачу созвон с командой, мне вообще удобнее работать вечером",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 34325.61259996146,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "be1e83921c3b9ea1f3b82a2c927f8f71",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2313.9,
+    "route": 0.0,
+    "analyst": 18639.5,
+    "planner": 198.3,
+    "validator": 12699.3,
+    "act": 99.5,
+    "finish": 0.0,
+    "propose_preference": 170.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 4,
+   "message": "да",
+   "expected": "preference_saved",
+   "outcome": "preference_saved",
+   "ms": 27.39639999344945,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {},
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "b4ee5f5536c0ac498c2a560eac5b4e2e",
+   "nodes": {
+    "preference_answer": 14.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 5,
+   "message": "С чего мне лучше начать?",
+   "expected": "ordered",
+   "outcome": "ordered",
+   "ms": 28557.43769998662,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "llm",
+   "trace_id": "5c13b67835861fb82b1f13f82615470e",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2382.0,
+    "route": 0.0,
+    "analyst": 18518.0,
+    "planner": 7607.1,
+    "validator": 11.5,
+    "act": 6.8,
+    "finish": 0.0,
+    "propose_preference": 6.5,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 6,
+   "message": "Покажи мои задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 13015.460799913853,
+   "route": "simple_read",
+   "models": {
+    "analyst": "qwen3:1.7b",
+    "planner": "qwen3:1.7b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "b7909fea5996f07011651ea960c0e7e9",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2362.3,
+    "route": 0.0,
+    "analyst": 10048.5,
+    "planner": 177.6,
+    "validator": 150.0,
+    "act": 73.4,
+    "finish": 0.0,
+    "propose_preference": 60.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 7,
+   "message": "Удали задачу #1",
+   "expected": "pending",
+   "outcome": "pending",
+   "ms": 20988.328699953854,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "dfaff3257f8d4872c6c55928987da183",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2399.9,
+    "route": 0.0,
+    "analyst": 18187.3,
+    "planner": 354.8,
+    "validator": 10.6,
+    "act": 8.6,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 8,
+   "message": "Удали отчёт",
+   "expected": "clarification",
+   "outcome": "clarification",
+   "ms": 6333.99449987337,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "34fcb6e1ee74e8dcfcb37c2366a3d707",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2391.3,
+    "route": 0.0,
+    "analyst": 3510.9,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 0,
+   "turn": 9,
+   "message": "Какие у меня задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 12451.577299972996,
+   "route": "simple_read",
+   "models": {
+    "analyst": "qwen3:1.7b",
+    "planner": "qwen3:1.7b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "3d297d75a41900b5513778f6f5a57fb7",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2381.6,
+    "route": 0.0,
+    "analyst": 9447.1,
+    "planner": 161.9,
+    "validator": 142.2,
+    "act": 69.8,
+    "finish": 0.0,
+    "propose_preference": 97.7,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 0,
+   "message": "Добавь задачу подготовить презентацию к пятнице",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 33898.30540004186,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "f89de9c1579037c31b1afbd26bcf7bc7",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2382.9,
+    "route": 0.0,
+    "analyst": 17953.5,
+    "planner": 156.4,
+    "validator": 13101.1,
+    "act": 86.2,
+    "finish": 0.0,
+    "propose_preference": 133.9,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 1,
+   "message": "Добавь срочную задачу исправить баг в авторизации на завтра",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 34085.321499966085,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "526bec0d5af0d202297faa1736dc301d",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2422.7,
+    "route": 0.0,
+    "analyst": 18971.7,
+    "planner": 25.8,
+    "validator": 12624.9,
+    "act": 10.3,
+    "finish": 0.0,
+    "propose_preference": 6.6,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 2,
+   "message": "Покажи задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 11631.87970011495,
+   "route": "simple_read",
+   "models": {
+    "analyst": "qwen3:1.7b",
+    "planner": "qwen3:1.7b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "32241acfe0a17039750fddf7fbacdb6f",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2444.4,
+    "route": 0.0,
+    "analyst": 8721.6,
+    "planner": 220.7,
+    "validator": 191.2,
+    "act": 13.8,
+    "finish": 0.0,
+    "propose_preference": 11.8,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 3,
+   "message": "Добавь задачу созвон с командой, мне вообще удобнее работать вечером",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 41285.41890019551,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "53df958163e7b6f9f7212d3cf31e0d3b",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2546.0,
+    "route": 0.0,
+    "analyst": 25206.6,
+    "planner": 207.4,
+    "validator": 12848.7,
+    "act": 119.7,
+    "finish": 0.0,
+    "propose_preference": 119.3,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 4,
+   "message": "да",
+   "expected": "preference_saved",
+   "outcome": "preference_saved",
+   "ms": 19.49370000511408,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {},
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "839686b84c481832fdf71e39d08aa9af",
+   "nodes": {
+    "preference_answer": 7.6,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 5,
+   "message": "С чего мне лучше начать?",
+   "expected": "ordered",
+   "outcome": "ordered",
+   "ms": 28854.61279982701,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "llm",
+   "trace_id": "e3ade6b8ce79018e7f4327079cba5ea2",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2388.1,
+    "route": 0.0,
+    "analyst": 18348.1,
+    "planner": 7938.7,
+    "validator": 135.6,
+    "act": 6.9,
+    "finish": 0.0,
+    "propose_preference": 12.1,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 6,
+   "message": "Покажи мои задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 12337.410399923101,
+   "route": "simple_read",
+   "models": {
+    "analyst": "qwen3:1.7b",
+    "planner": "qwen3:1.7b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "e0ff8a03ba17d9b0c17ed3bd0ae7b47b",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2422.3,
+    "route": 0.0,
+    "analyst": 9864.8,
+    "planner": 8.9,
+    "validator": 2.1,
+    "act": 6.8,
+    "finish": 0.0,
+    "propose_preference": 12.1,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 7,
+   "message": "Удали задачу #1",
+   "expected": "pending",
+   "outcome": "pending",
+   "ms": 22089.01849994436,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "3e5f99a1489891550fe8ee4ccac94f4f",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2294.1,
+    "route": 0.0,
+    "analyst": 19251.0,
+    "planner": 250.1,
+    "validator": 141.3,
+    "act": 122.3,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 8,
+   "message": "Удали отчёт",
+   "expected": "clarification",
+   "outcome": "clarification",
+   "ms": 6462.59790007025,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "2e8938407a7ba8a71bc234c343fd8442",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2445.5,
+    "route": 0.0,
+    "analyst": 3563.7,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "routing",
+   "repeat": 1,
+   "turn": 9,
+   "message": "Какие у меня задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 12834.44710006006,
+   "route": "simple_read",
+   "models": {
+    "analyst": "qwen3:1.7b",
+    "planner": "qwen3:1.7b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "cfea5d56664764347c080ccb9464bddf",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2464.3,
+    "route": 0.0,
+    "analyst": 9744.2,
+    "planner": 251.3,
+    "validator": 63.7,
+    "act": 13.5,
+    "finish": 0.0,
+    "propose_preference": 12.3,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 0,
+   "message": "Добавь задачу подготовить презентацию к пятнице",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 34198.19719996303,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "541a93ba02364f75a5cdc8c3fb8fe765",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2421.7,
+    "route": 0.0,
+    "analyst": 18883.3,
+    "planner": 11.6,
+    "validator": 12801.3,
+    "act": 45.0,
+    "finish": 0.0,
+    "propose_preference": 7.9,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 1,
+   "message": "Добавь срочную задачу исправить баг в авторизации на завтра",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 368149.48619995266,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "1d7172b2213d14371ac79545f9192187",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2393.7,
+    "route": 0.0,
+    "analyst": 352093.0,
+    "planner": 225.8,
+    "validator": 12922.0,
+    "act": 109.7,
+    "finish": 0.0,
+    "propose_preference": 145.7,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 2,
+   "message": "Покажи задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 20839.79359990917,
+   "route": "simple_read",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "ca05b5d1607f894ced5c5af5c3ab6e01",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2443.9,
+    "route": 0.0,
+    "analyst": 18210.4,
+    "planner": 10.3,
+    "validator": 2.0,
+    "act": 6.9,
+    "finish": 0.0,
+    "propose_preference": 8.2,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 3,
+   "message": "Добавь задачу созвон с командой, мне вообще удобнее работать вечером",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 18962.426599813625,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "6eba4ac4e0b0202f963867c23a402c9d",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2319.7,
+    "route": 0.0,
+    "analyst": 3386.0,
+    "planner": 150.4,
+    "validator": 12735.3,
+    "act": 121.6,
+    "finish": 0.0,
+    "propose_preference": 61.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 4,
+   "message": "да",
+   "expected": "preference_saved",
+   "outcome": "preference_saved",
+   "ms": 21.422999911010265,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {},
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "6fbac38bb924ca96681cc003f9aef6f4",
+   "nodes": {
+    "preference_answer": 10.4,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 5,
+   "message": "С чего мне лучше начать?",
+   "expected": "ordered",
+   "outcome": "ordered",
+   "ms": 28468.262700131163,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "llm",
+   "trace_id": "f1616c75883e4d345cf683ade4df194e",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2395.3,
+    "route": 0.0,
+    "analyst": 18291.3,
+    "planner": 7611.2,
+    "validator": 131.7,
+    "act": 8.2,
+    "finish": 0.0,
+    "propose_preference": 6.6,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 6,
+   "message": "Покажи мои задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 6562.700199894607,
+   "route": "simple_read",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "f0108f8c41aa026a4892f548a8f9bf37",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2421.2,
+    "route": 0.0,
+    "analyst": 3500.5,
+    "planner": 217.6,
+    "validator": 120.4,
+    "act": 71.5,
+    "finish": 0.0,
+    "propose_preference": 108.7,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 7,
+   "message": "Удали задачу #1",
+   "expected": "pending",
+   "outcome": "pending",
+   "ms": 6584.122000029311,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "934c900bd3803fa8ec036f0e183ab90e",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2406.1,
+    "route": 0.0,
+    "analyst": 3504.7,
+    "planner": 269.0,
+    "validator": 118.9,
+    "act": 145.9,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 8,
+   "message": "Удали отчёт",
+   "expected": "clarification",
+   "outcome": "clarification",
+   "ms": 6420.753600075841,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "187ab96b163803073e1af80778b2c548",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2436.0,
+    "route": 0.0,
+    "analyst": 3532.6,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 0,
+   "turn": 9,
+   "message": "Какие у меня задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 6668.837500037625,
+   "route": "simple_read",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "a4d6c0d632861dca91fd58e24cbb3b3c",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2440.7,
+    "route": 0.0,
+    "analyst": 3528.6,
+    "planner": 202.6,
+    "validator": 119.5,
+    "act": 60.8,
+    "finish": 0.0,
+    "propose_preference": 78.6,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 0,
+   "message": "Добавь задачу подготовить презентацию к пятнице",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 19538.012699922547,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "ec9d03a08ebf01a2fe3eeb4ecd03fcb1",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2443.3,
+    "route": 0.0,
+    "analyst": 3679.1,
+    "planner": 179.2,
+    "validator": 12745.3,
+    "act": 97.7,
+    "finish": 0.0,
+    "propose_preference": 100.5,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 1,
+   "message": "Добавь срочную задачу исправить баг в авторизации на завтра",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 34571.81939994916,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "9cb68112875a45bc574e84c36a0cde6c",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2366.0,
+    "route": 0.0,
+    "analyst": 18688.6,
+    "planner": 187.5,
+    "validator": 12841.7,
+    "act": 97.7,
+    "finish": 0.0,
+    "propose_preference": 54.3,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 2,
+   "message": "Покажи задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 20945.015399949625,
+   "route": "simple_read",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "02e7a1ed2127cf2c8bb66f146fb6363a",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2431.8,
+    "route": 0.0,
+    "analyst": 18362.3,
+    "planner": 10.5,
+    "validator": 1.9,
+    "act": 8.1,
+    "finish": 0.0,
+    "propose_preference": 6.8,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 3,
+   "message": "Добавь задачу созвон с командой, мне вообще удобнее работать вечером",
+   "expected": "created",
+   "outcome": "created",
+   "ms": 19033.606099896133,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "08d22a5d3d23fa413b43caa3bfc5343c",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2368.9,
+    "route": 0.0,
+    "analyst": 3433.2,
+    "planner": 170.7,
+    "validator": 12591.1,
+    "act": 124.6,
+    "finish": 0.0,
+    "propose_preference": 160.3,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 4,
+   "message": "да",
+   "expected": "preference_saved",
+   "outcome": "preference_saved",
+   "ms": 27.148399967700243,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {},
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "7d87b6bc18442d8fd0301ccf5951eece",
+   "nodes": {
+    "preference_answer": 14.2,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 5,
+   "message": "С чего мне лучше начать?",
+   "expected": "ordered",
+   "outcome": "ordered",
+   "ms": 27715.719599975273,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "llm",
+   "trace_id": "a2f0a74c1e6c6750c235044fdb48d6e1",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2384.4,
+    "route": 0.0,
+    "analyst": 17700.2,
+    "planner": 7582.5,
+    "validator": 11.3,
+    "act": 7.0,
+    "finish": 0.0,
+    "propose_preference": 6.2,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 6,
+   "message": "Покажи мои задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 6058.186199981719,
+   "route": "simple_read",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "95d65aec0b6d6158c769c1905b5a631d",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2380.0,
+    "route": 0.0,
+    "analyst": 3560.6,
+    "planner": 79.0,
+    "validator": 1.4,
+    "act": 8.0,
+    "finish": 0.0,
+    "propose_preference": 6.5,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 7,
+   "message": "Удали задачу #1",
+   "expected": "pending",
+   "outcome": "pending",
+   "ms": 6387.608299963176,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "9833a89a7d00f8cd0296b5dc10adab37",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2411.7,
+    "route": 0.0,
+    "analyst": 3480.4,
+    "planner": 239.0,
+    "validator": 163.4,
+    "act": 60.4,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 8,
+   "message": "Удали отчёт",
+   "expected": "clarification",
+   "outcome": "clarification",
+   "ms": 6297.066600061953,
+   "route": "full",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 0,
+   "plan_source": null,
+   "trace_id": "718b6286ea354413800eb13c44c7dbfa",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2440.8,
+    "route": 0.0,
+    "analyst": 3406.0,
+    "finish": 0.0,
+    "propose_preference": 0.0,
+    "remember_reply": 0.0
+   }
+  },
+  {
+   "config": "single",
+   "repeat": 1,
+   "turn": 9,
+   "message": "Какие у меня задачи",
+   "expected": "listed",
+   "outcome": "listed",
+   "ms": 6393.531900132075,
+   "route": "simple_read",
+   "models": {
+    "analyst": "gemma4:e2b",
+    "planner": "gemma4:e2b",
+    "validator": "ministral-3:3b"
+   },
+   "error": null,
+   "agent_errors": {
+    "decision": 1
+   },
+   "model_retries": {},
+   "validation_attempts": 1,
+   "plan_source": "rules",
+   "trace_id": "b9ef02db4e5bb9c5df370a3dfd78e6bc",
+   "nodes": {
+    "preference_answer": 0.0,
+    "decision": 2458.7,
+    "route": 0.0,
+    "analyst": 3397.2,
+    "planner": 168.4,
+    "validator": 174.4,
+    "act": 80.8,
+    "finish": 0.0,
+    "propose_preference": 66.4,
+    "remember_reply": 0.0
+   }
+  }
+ ],
+ "llm_calls": [
+  {
+   "turn": 0,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 36.003903000149876,
+   "eval_count": 35,
+   "eval_s": 0.429136,
+   "prompt_count": 1550,
+   "prompt_s": 1.278124,
+   "load_s": 31.549245,
+   "config": "routing"
+  },
+  {
+   "turn": 0,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 21.020864800084382,
+   "eval_count": 16,
+   "eval_s": 0.780464,
+   "prompt_count": 2115,
+   "prompt_s": 1.437838,
+   "load_s": 16.0852682,
+   "config": "routing"
+  },
+  {
+   "turn": 1,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.950833899900317,
+   "eval_count": 38,
+   "eval_s": 0.515044,
+   "prompt_count": 1656,
+   "prompt_s": 1.272469,
+   "load_s": 14.5136743,
+   "config": "routing"
+  },
+  {
+   "turn": 1,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.68340940005146,
+   "eval_count": 16,
+   "eval_s": 0.76917,
+   "prompt_count": 2187,
+   "prompt_s": 1.462778,
+   "load_s": 7.7463392,
+   "config": "routing"
+  },
+  {
+   "turn": 2,
+   "model": "qwen3:1.7b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 8.82580369990319,
+   "eval_count": 111,
+   "eval_s": 1.206574,
+   "prompt_count": 1925,
+   "prompt_s": 0.599274,
+   "load_s": 4.3044676,
+   "config": "routing"
+  },
+  {
+   "turn": 3,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.625918800011277,
+   "eval_count": 23,
+   "eval_s": 0.348324,
+   "prompt_count": 1816,
+   "prompt_s": 1.358729,
+   "load_s": 14.2434666,
+   "config": "routing"
+  },
+  {
+   "turn": 3,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.528109699953347,
+   "eval_count": 16,
+   "eval_s": 0.771928,
+   "prompt_count": 2086,
+   "prompt_s": 1.411641,
+   "load_s": 7.7518019,
+   "config": "routing"
+  },
+  {
+   "turn": 5,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.349688300164416,
+   "eval_count": 8,
+   "eval_s": 0.152283,
+   "prompt_count": 1860,
+   "prompt_s": 1.304362,
+   "load_s": 14.2621063,
+   "config": "routing"
+  },
+  {
+   "turn": 5,
+   "model": "gemma4:e2b",
+   "role": "planner",
+   "ok": true,
+   "seconds": 7.32619439996779,
+   "eval_count": 212,
+   "eval_s": 3.595192,
+   "prompt_count": 2150,
+   "prompt_s": 1.140458,
+   "load_s": 0.0179094,
+   "config": "routing"
+  },
+  {
+   "turn": 6,
+   "model": "qwen3:1.7b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 10.030910499859601,
+   "eval_count": 207,
+   "eval_s": 2.26541,
+   "prompt_count": 2120,
+   "prompt_s": 0.625095,
+   "load_s": 4.4708175,
+   "config": "routing"
+  },
+  {
+   "turn": 7,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.06723599997349,
+   "eval_count": 14,
+   "eval_s": 0.207784,
+   "prompt_count": 1988,
+   "prompt_s": 1.370593,
+   "load_s": 13.9215806,
+   "config": "routing"
+  },
+  {
+   "turn": 8,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.3551795000676066,
+   "eval_count": 14,
+   "eval_s": 0.197863,
+   "prompt_count": 1890,
+   "prompt_s": 0.553003,
+   "load_s": 0.0082447,
+   "config": "routing"
+  },
+  {
+   "turn": 9,
+   "model": "qwen3:1.7b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 9.306561900069937,
+   "eval_count": 158,
+   "eval_s": 1.655716,
+   "prompt_count": 1979,
+   "prompt_s": 0.561342,
+   "load_s": 4.4617037,
+   "config": "routing"
+  },
+  {
+   "turn": 10,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 17.848549699876457,
+   "eval_count": 35,
+   "eval_s": 0.426532,
+   "prompt_count": 1550,
+   "prompt_s": 1.158978,
+   "load_s": 13.687625,
+   "config": "routing"
+  },
+  {
+   "turn": 10,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.937924199970439,
+   "eval_count": 16,
+   "eval_s": 0.818017,
+   "prompt_count": 2115,
+   "prompt_s": 1.443923,
+   "load_s": 8.0106723,
+   "config": "routing"
+  },
+  {
+   "turn": 11,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.67244780017063,
+   "eval_count": 38,
+   "eval_s": 0.530991999,
+   "prompt_count": 1656,
+   "prompt_s": 1.364706,
+   "load_s": 14.1958887,
+   "config": "routing"
+  },
+  {
+   "turn": 11,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.622696799924597,
+   "eval_count": 16,
+   "eval_s": 0.788403,
+   "prompt_count": 2187,
+   "prompt_s": 1.455081,
+   "load_s": 7.7598691,
+   "config": "routing"
+  },
+  {
+   "turn": 12,
+   "model": "qwen3:1.7b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 8.535595000023022,
+   "eval_count": 111,
+   "eval_s": 1.189396,
+   "prompt_count": 1925,
+   "prompt_s": 0.604377,
+   "load_s": 4.1572212,
+   "config": "routing"
+  },
+  {
+   "turn": 13,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 25.035898600006476,
+   "eval_count": 23,
+   "eval_s": 0.343556,
+   "prompt_count": 1816,
+   "prompt_s": 1.379529,
+   "load_s": 20.6087394,
+   "config": "routing"
+  },
+  {
+   "turn": 13,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.6711991999764,
+   "eval_count": 16,
+   "eval_s": 0.777977,
+   "prompt_count": 2086,
+   "prompt_s": 1.42529,
+   "load_s": 7.8258146,
+   "config": "routing"
+  },
+  {
+   "turn": 15,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.14780479995534,
+   "eval_count": 11,
+   "eval_s": 0.252103,
+   "prompt_count": 1860,
+   "prompt_s": 1.41657,
+   "load_s": 13.916456,
+   "config": "routing"
+  },
+  {
+   "turn": 15,
+   "model": "gemma4:e2b",
+   "role": "planner",
+   "ok": true,
+   "seconds": 7.606189500074834,
+   "eval_count": 212,
+   "eval_s": 3.6831,
+   "prompt_count": 2150,
+   "prompt_s": 1.17222,
+   "load_s": 0.0456707,
+   "config": "routing"
+  },
+  {
+   "turn": 16,
+   "model": "qwen3:1.7b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 9.709692099830136,
+   "eval_count": 207,
+   "eval_s": 2.263509,
+   "prompt_count": 2119,
+   "prompt_s": 0.611304,
+   "load_s": 4.2452958,
+   "config": "routing"
+  },
+  {
+   "turn": 17,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 19.24070700001903,
+   "eval_count": 14,
+   "eval_s": 0.198984,
+   "prompt_count": 1988,
+   "prompt_s": 1.44717,
+   "load_s": 15.0417027,
+   "config": "routing"
+  },
+  {
+   "turn": 18,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.4182941000908613,
+   "eval_count": 14,
+   "eval_s": 0.18539,
+   "prompt_count": 1890,
+   "prompt_s": 0.529260999,
+   "load_s": 0.0390456,
+   "config": "routing"
+  },
+  {
+   "turn": 19,
+   "model": "qwen3:1.7b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 9.523566999938339,
+   "eval_count": 160,
+   "eval_s": 1.665639,
+   "prompt_count": 1979,
+   "prompt_s": 0.602532,
+   "load_s": 4.5553184,
+   "config": "routing"
+  },
+  {
+   "turn": 0,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.713369000004604,
+   "eval_count": 35,
+   "eval_s": 0.445981,
+   "prompt_count": 1550,
+   "prompt_s": 1.488854,
+   "load_s": 14.2143618,
+   "config": "single"
+  },
+  {
+   "turn": 0,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.792389700189233,
+   "eval_count": 16,
+   "eval_s": 0.799269,
+   "prompt_count": 2115,
+   "prompt_s": 1.430683,
+   "load_s": 7.8378354,
+   "config": "single"
+  },
+  {
+   "turn": 1,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 351.91477619996294,
+   "eval_count": 38,
+   "eval_s": 0.526905999,
+   "prompt_count": 1656,
+   "prompt_s": 1.257758,
+   "load_s": 13.9793886,
+   "config": "single"
+  },
+  {
+   "turn": 1,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.688927300041541,
+   "eval_count": 16,
+   "eval_s": 0.780249,
+   "prompt_count": 2187,
+   "prompt_s": 1.45566,
+   "load_s": 7.8093551,
+   "config": "single"
+  },
+  {
+   "turn": 2,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 17.89152089995332,
+   "eval_count": 8,
+   "eval_s": 0.145701,
+   "prompt_count": 1760,
+   "prompt_s": 1.355322,
+   "load_s": 13.7371573,
+   "config": "single"
+  },
+  {
+   "turn": 3,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.3721001998055726,
+   "eval_count": 23,
+   "eval_s": 0.336705,
+   "prompt_count": 1816,
+   "prompt_s": 0.413986,
+   "load_s": 0.0069432,
+   "config": "single"
+  },
+  {
+   "turn": 3,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.648454699898139,
+   "eval_count": 16,
+   "eval_s": 0.795772,
+   "prompt_count": 2086,
+   "prompt_s": 1.414817,
+   "load_s": 7.7932993,
+   "config": "single"
+  },
+  {
+   "turn": 5,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.13640599977225,
+   "eval_count": 8,
+   "eval_s": 0.15166,
+   "prompt_count": 1860,
+   "prompt_s": 1.388408,
+   "load_s": 13.9308512,
+   "config": "single"
+  },
+  {
+   "turn": 5,
+   "model": "gemma4:e2b",
+   "role": "planner",
+   "ok": true,
+   "seconds": 7.244837499922141,
+   "eval_count": 212,
+   "eval_s": 3.479207,
+   "prompt_count": 2150,
+   "prompt_s": 1.115713,
+   "load_s": 0.0268441,
+   "config": "single"
+  },
+  {
+   "turn": 6,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.3290637999307364,
+   "eval_count": 8,
+   "eval_s": 0.144187,
+   "prompt_count": 1924,
+   "prompt_s": 0.539563,
+   "load_s": 0.0175365,
+   "config": "single"
+  },
+  {
+   "turn": 7,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.36157299997285,
+   "eval_count": 14,
+   "eval_s": 0.19136,
+   "prompt_count": 1988,
+   "prompt_s": 0.52632,
+   "load_s": 0.0377433,
+   "config": "single"
+  },
+  {
+   "turn": 8,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.368484300095588,
+   "eval_count": 14,
+   "eval_s": 0.188342,
+   "prompt_count": 1890,
+   "prompt_s": 0.581533,
+   "load_s": 0.0139321,
+   "config": "single"
+  },
+  {
+   "turn": 9,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.37229279987514,
+   "eval_count": 8,
+   "eval_s": 0.149098,
+   "prompt_count": 1821,
+   "prompt_s": 0.514293,
+   "load_s": 0.0056092,
+   "config": "single"
+  },
+  {
+   "turn": 10,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.57901189988479,
+   "eval_count": 35,
+   "eval_s": 0.436804,
+   "prompt_count": 1550,
+   "prompt_s": 0.467118,
+   "load_s": 0.0133394,
+   "config": "single"
+  },
+  {
+   "turn": 10,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.567825899925083,
+   "eval_count": 16,
+   "eval_s": 0.75695,
+   "prompt_count": 2115,
+   "prompt_s": 1.416702,
+   "load_s": 7.7860762,
+   "config": "single"
+  },
+  {
+   "turn": 11,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.5014991001226,
+   "eval_count": 38,
+   "eval_s": 0.516471,
+   "prompt_count": 1656,
+   "prompt_s": 1.347644,
+   "load_s": 13.9837725,
+   "config": "single"
+  },
+  {
+   "turn": 11,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.679918899899349,
+   "eval_count": 16,
+   "eval_s": 0.755613,
+   "prompt_count": 2187,
+   "prompt_s": 1.471165,
+   "load_s": 7.7710374,
+   "config": "single"
+  },
+  {
+   "turn": 12,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 18.216397600015625,
+   "eval_count": 8,
+   "eval_s": 0.148009,
+   "prompt_count": 1760,
+   "prompt_s": 1.395051,
+   "load_s": 14.0181645,
+   "config": "single"
+  },
+  {
+   "turn": 13,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.4193923000711948,
+   "eval_count": 23,
+   "eval_s": 0.333613,
+   "prompt_count": 1816,
+   "prompt_s": 0.414306,
+   "load_s": 0.0199279,
+   "config": "single"
+  },
+  {
+   "turn": 13,
+   "model": "ministral-3:3b",
+   "role": "validator",
+   "ok": true,
+   "seconds": 12.589335599914193,
+   "eval_count": 16,
+   "eval_s": 0.769077,
+   "prompt_count": 2086,
+   "prompt_s": 1.402671,
+   "load_s": 7.7620581,
+   "config": "single"
+  },
+  {
+   "turn": 15,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 17.5398502999451,
+   "eval_count": 8,
+   "eval_s": 0.151605,
+   "prompt_count": 1860,
+   "prompt_s": 1.256858,
+   "load_s": 13.5398757,
+   "config": "single"
+  },
+  {
+   "turn": 15,
+   "model": "gemma4:e2b",
+   "role": "planner",
+   "ok": true,
+   "seconds": 7.3204530999064445,
+   "eval_count": 212,
+   "eval_s": 3.456801,
+   "prompt_count": 2150,
+   "prompt_s": 1.186587,
+   "load_s": 0.0105642,
+   "config": "single"
+  },
+  {
+   "turn": 16,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.5447388999164104,
+   "eval_count": 8,
+   "eval_s": 0.146762,
+   "prompt_count": 1924,
+   "prompt_s": 0.672709,
+   "load_s": 0.0135453,
+   "config": "single"
+  },
+  {
+   "turn": 17,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.3783301000948995,
+   "eval_count": 14,
+   "eval_s": 0.198014,
+   "prompt_count": 1988,
+   "prompt_s": 0.576172,
+   "load_s": 0.0050924,
+   "config": "single"
+  },
+  {
+   "turn": 18,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.3617293999996036,
+   "eval_count": 14,
+   "eval_s": 0.189243,
+   "prompt_count": 1890,
+   "prompt_s": 0.606024,
+   "load_s": 0.0075048,
+   "config": "single"
+  },
+  {
+   "turn": 19,
+   "model": "gemma4:e2b",
+   "role": "analyst",
+   "ok": true,
+   "seconds": 3.278072000015527,
+   "eval_count": 8,
+   "eval_s": 0.143073,
+   "prompt_count": 1821,
+   "prompt_s": 0.506125,
+   "load_s": 0.0071493,
+   "config": "single"
+  }
+ ],
+ "routing": {
+  "read_turns_ms_routed": 73720.83140001632,
+  "read_turns_ms_single": 67468.06479990482,
+  "read_saving_percent": -9.267742625575238,
+  "total_ms_routed": 425768.20309995674,
+  "total_ms_single": 643843.7171995174,
+  "total_saving_percent": 33.87087708925836
+ }
+}
