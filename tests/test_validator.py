@@ -336,17 +336,17 @@ def test_llm_reject_returns_reasons_for_planner(db: sqlite3.Connection) -> None:
     llm = FakeLLM(
         {
             "decision": "reject",
-            "issues": [{"code": "wrong_deadline", "detail": "Пятница — это 16.10, а не 17.10"}],
+            "issues": [{"code": "wrong_deadline", "detail": "16-е — это 16.10, а не 17.10"}],
         }
     )
-    verdict = check(db, analysis, planned(db, analysis), llm, request="Перенеси #1 на пятницу")
+    verdict = check(db, analysis, planned(db, analysis), llm, request="Перенеси #1 на 16-е")
     assert not verdict.accepted
-    assert verdict.reasons == ["Пятница — это 16.10, а не 17.10"]
+    assert verdict.reasons == ["16-е — это 16.10, а не 17.10"]
 
     sent = llm.calls[0]
     assert sent["schema"] == VALIDATOR_OUTPUT_SCHEMA
-    assert sent["user"]["request"] == "Перенеси #1 на пятницу"
-    assert "verified_by_code" not in sent["user"]  # дни недели код не распознаёт
+    assert sent["user"]["request"] == "Перенеси #1 на 16-е"
+    assert "verified_by_code" not in sent["user"]  # «16-е» код не распознаёт, дату судит модель
     assert sent["user"]["now"].startswith("2026-10-14")
     # календарь посчитан кодом: 14.10.2026 — среда
     assert sent["user"]["calendar"][:2] == [
@@ -530,7 +530,12 @@ def test_validator_node_refuses_same_family(db_path: Path) -> None:
         ("сегодня до вечера", {"сегодня": "2026-10-14"}),
         ("через 3 дня", {"через 3 дня": "2026-10-17"}),
         ("через три дня в 10:15", {"через три дня": "2026-10-17"}),
-        ("в пятницу", {}),
+        ("в пятницу", {"в пятницу": "2026-10-16"}),
+        ("позвонить начальнику в воскресенье", {"в воскресенье": "2026-10-18"}),
+        ("до среды", {"до среды": "2026-10-14"}),
+        ("на следующий вторник", {"на следующий вторник": "2026-10-20"}),
+        ("настроить среду разработки", {}),
+        ("15 числа", {}),
     ],
 )
 def test_mentioned_dates(request_text: str, expected: dict[str, str]) -> None:
@@ -562,6 +567,41 @@ def test_llm_date_complaint_is_overruled_when_code_verified(db: sqlite3.Connecti
     assert verdict.accepted
     assert any("проверены кодом" in note for note in verdict.notes)
     assert llm.calls[0]["user"]["verified_by_code"]
+
+
+def test_weekday_complaint_is_overruled_when_plan_has_nearest_day(db: sqlite3.Connection) -> None:
+    # Ministral отклоняла верный срок «в воскресенье» = ближайшее воскресенье (18.10 при NOW 14.10)
+    analysis = {"intent": "create_task", "tasks": [{"title": "Звонок", "deadline": "2026-10-18"}]}
+    llm = FakeLLM(
+        {
+            "decision": "reject",
+            "issues": [{"code": "wrong_deadline", "detail": "должно быть ближайшее воскресенье"}],
+        }
+    )
+    verdict = check(
+        db, analysis, planned(db, analysis), llm, request="Позвонить начальнику в воскресенье"
+    )
+    assert verdict.accepted
+    assert any("проверены кодом" in note for note in verdict.notes)
+
+
+def test_wrong_weekday_is_caught_by_code(db: sqlite3.Connection) -> None:
+    # «в пятницу», а аналитик поставил субботу — код отклоняет без вызова модели
+    analysis = {"intent": "create_task", "tasks": [{"title": "Отчёт", "deadline": "2026-10-17"}]}
+    llm = FakeLLM()
+    verdict = check(db, analysis, planned(db, analysis), llm, request="Сдать отчёт в пятницу")
+    assert verdict.issues[0].code == "wrong_deadline"
+    assert "2026-10-16" in verdict.issues[0].detail
+    assert llm.calls == []
+
+
+def test_same_weekday_allows_today_and_next_week(db: sqlite3.Connection) -> None:
+    # NOW — среда: «в среду» может значить и сегодня, и через неделю
+    for deadline in ("2026-10-14", "2026-10-21"):
+        analysis = {"intent": "create_task", "tasks": [{"title": "Созвон", "deadline": deadline}]}
+        llm = FakeLLM({"decision": "accept", "issues": []})
+        verdict = check(db, analysis, planned(db, analysis), llm, request="Созвон в среду")
+        assert verdict.accepted, deadline
 
 
 def test_other_llm_issues_still_reject_when_dates_verified(db: sqlite3.Connection) -> None:
