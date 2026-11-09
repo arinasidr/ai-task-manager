@@ -35,6 +35,7 @@ from ai_task_manager.agents.contracts import (
     Plan,
     Recommendation,
 )
+from ai_task_manager.agents.dates import corrected_deadline
 from ai_task_manager.agents.llm import JsonLLM, LLMError
 from ai_task_manager.db.crud_func import (
     get_dependencies,
@@ -292,6 +293,9 @@ class Planner:
         # Связи, исправленные кодом (см. _order_from_request); узел графа кладёт их в разбор,
         # чтобы валидатор сверял план с исправленными, а не с ошибочными связями аналитика.
         self.repaired_dependencies: list[ExtractedDependency] | None = None
+        # Сроки, исправленные кодом по тексту запроса: ("tasks", индекс, срок) или
+        # ("updates", None, срок) — узел планировщика переносит их в разбор в State.
+        self.deadline_fixes: list[tuple[str, int | None, str]] = []
 
     def plan(
         self,
@@ -310,6 +314,7 @@ class Planner:
         self._request = request
         self.repaired_dependencies = None
         self.llm_retries = 0
+        analysis, date_notes = self._fix_deadlines(analysis, request, now)
 
         handlers = {
             "create_task": self._plan_create,
@@ -326,11 +331,42 @@ class Planner:
         else:
             plan = self._clarify(analysis, analysis.missing_fields)
 
+        plan.reasoning.extend(date_notes)
         if feedback and plan.source == "rules":
             # План по правилам от замечаний не меняется: если валидатор его отклоняет, решать
             # должен пользователь, а не повторный цикл.
             plan.reasoning.append("Замечания валидатора: " + "; ".join(feedback))
         return plan
+
+    def _fix_deadlines(
+        self, analysis: Analysis, request: str, now: datetime
+    ) -> tuple[Analysis, list[str]]:
+        """Аналитик иногда ошибается в дне («к воскресенью» → пятница). Если в запросе ровно одна
+        дата, которую код вычисляет сам, и ровно один срок в разборе, срок исправляет код."""
+        self.deadline_fixes = []
+        if not request:
+            return analysis, []
+        if analysis.intent == "create_task":
+            with_deadline = [i for i, t in enumerate(analysis.tasks) if t.deadline]
+            if len(with_deadline) != 1:
+                return analysis, []
+            index = with_deadline[0]
+            fix = corrected_deadline(analysis.tasks[index].deadline, request, now)
+            if fix is None:
+                return analysis, []
+            analysis = analysis.model_copy(deep=True)
+            analysis.tasks[index].deadline = fix[0]
+            self.deadline_fixes.append(("tasks", index, fix[0]))
+            return analysis, [fix[1]]
+        if analysis.intent == "update_task" and analysis.updates.get("deadline"):
+            fix = corrected_deadline(analysis.updates["deadline"], request, now)
+            if fix is None:
+                return analysis, []
+            analysis = analysis.model_copy(deep=True)
+            analysis.updates["deadline"] = fix[0]
+            self.deadline_fixes.append(("updates", None, fix[0]))
+            return analysis, [fix[1]]
+        return analysis, []
 
     # ---------------------------------------------------------- уточнение
 

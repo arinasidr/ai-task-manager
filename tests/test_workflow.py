@@ -550,6 +550,27 @@ def test_repaired_dependency_reaches_validator(
     ] == [first]
 
 
+def test_wrong_weekday_is_fixed_before_validator(
+    chat, models: Models, db: sqlite3.Connection
+) -> None:
+    """Живой прогон: «к воскресенью», аналитик поставил пятницу. Код исправляет срок, и
+    валидатор видит исправленный разбор, а не отклоняет план."""
+    models.answer(
+        "analyst",
+        {
+            "intent": "create_task",
+            "tasks": [{"title": "Приготовить курицу", "deadline": "2026-10-16"}],
+        },
+    )
+    models.answer("validator", ACCEPT)
+
+    result = chat("добавь задачу приготовить курицу к воскресенью")
+
+    assert models.calls[-1]["user"]["analysis"]["tasks"][0]["deadline"] == "2026-10-18"
+    assert result.reply.startswith("Готово")
+    assert list_tasks(db)[0]["due_date"] == "2026-10-18"
+
+
 # ---------------------------------------------------------------- долгосрочная память (P12)
 
 

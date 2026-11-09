@@ -585,6 +585,23 @@ def test_weekday_complaint_is_overruled_when_plan_has_nearest_day(db: sqlite3.Co
     assert any("проверены кодом" in note for note in verdict.notes)
 
 
+def test_date_complaint_with_other_code_is_overruled(db: sqlite3.Connection) -> None:
+    # живой случай: Ministral посчитала ближайшее воскресенье субботой и поставила код other
+    analysis = {
+        "intent": "create_task",
+        "tasks": [{"title": "Поздравить", "deadline": "2026-10-18"}],
+    }
+    llm = FakeLLM(
+        {
+            "decision": "reject",
+            "issues": [{"code": "other", "detail": "18 октября — суббота, воскресенье — 19-е"}],
+        }
+    )
+    verdict = check(db, analysis, planned(db, analysis), llm, request="Поздравить в воскресенье")
+    assert verdict.accepted
+    assert any("проверены кодом" in note for note in verdict.notes)
+
+
 def test_wrong_weekday_is_caught_by_code(db: sqlite3.Connection) -> None:
     # «в пятницу», а аналитик поставил субботу — код отклоняет без вызова модели
     analysis = {"intent": "create_task", "tasks": [{"title": "Отчёт", "deadline": "2026-10-17"}]}

@@ -119,11 +119,19 @@ def make_planner_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
             counts = dict(state.get("model_retry_counts") or {})
             counts["planner"] = counts.get("planner", 0) + planner.llm_retries
             update["model_retry_counts"] = counts
-        if planner.repaired_dependencies is not None:
-            # аналитик ошибся в связи, код восстановил её по тексту запроса — дальше по графу
+        if planner.repaired_dependencies is not None or planner.deadline_fixes:
+            # аналитик ошибся в связи или в дне, код исправил по тексту запроса — дальше по графу
             # (валидатор, история) идёт исправленный разбор
             analysis = dict(state["analysis"])
-            analysis["dependencies"] = [d.model_dump() for d in planner.repaired_dependencies]
+            if planner.repaired_dependencies is not None:
+                analysis["dependencies"] = [d.model_dump() for d in planner.repaired_dependencies]
+            for field, index, deadline in planner.deadline_fixes:
+                if field == "tasks" and index is not None:
+                    tasks = [dict(t) for t in analysis.get("tasks") or []]
+                    tasks[index]["deadline"] = deadline
+                    analysis["tasks"] = tasks
+                else:
+                    analysis["updates"] = {**(analysis.get("updates") or {}), "deadline": deadline}
             update["analysis"] = analysis
         # предыдущий вердикт относится к старому плану
         return update

@@ -26,6 +26,7 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel, Field, ValidationError
 
 from ai_task_manager.agents.contracts import Analysis, Plan
+from ai_task_manager.agents.dates import mentioned_dates, weekday_dates
 from ai_task_manager.agents.llm import JsonLLM, LLMError
 from ai_task_manager.agents.planner import (
     _creates_cycle,
@@ -192,57 +193,15 @@ def calendar_hint(now: datetime, days: int = 8) -> list[str]:
 
 _DUE_FIELDS = ("due_date", "due_time", "due_timezone", "due_at_utc")
 
-_RELATIVE_WORDS = {"сегодня": 0, "завтра": 1, "послезавтра": 2}
-_NUMBER_WORDS = {
-    "один": 1, "одну": 1, "два": 2, "две": 2, "три": 3, "четыре": 4, "пять": 5,
-    "шесть": 6, "семь": 7, "восемь": 8, "девять": 9, "десять": 10,
-}  # fmt: skip
-_IN_DAYS = re.compile(r"\bчерез\s+(\d+|[а-яё]+)\s+(?:день|дня|дней)\b", re.IGNORECASE)
-_WORD = re.compile(r"\b(послезавтра|завтра|сегодня)\b", re.IGNORECASE)
-# «в воскресенье», «на пятницу», «до среды», «в следующий вторник». Предлог обязателен:
-# «настроить среду разработки» — не день недели.
-_WEEKDAY_STEMS = ("понедельник", "вторник", "сред", "четверг", "пятниц", "суббот", "воскресень")
-_WEEKDAY = re.compile(
-    r"\b(?:в|во|на|к|ко|до)\s+(?:(эт[уоа]\w*|ближайш\w*|следующ\w*)\s+)?"
-    r"(понедельник\w*|вторник\w*|сред[уаы]|четверг\w*|пятниц[уаы]|суббот[уаы]|воскресень[ея])\b",
+# Замечание модели «про дату»: день недели, месяц, срок, дата в любом виде. Если даты уже
+# проверил код, такие замечания — ошибка счёта модели, какой бы код она ни поставила.
+_DATE_TALK = re.compile(
+    r"\b(?:срок\w*|дат[аеуы]\b|понедельник\w*|вторник\w*|сред[аеуы]\b|четверг\w*|пятниц\w*"
+    r"|суббот\w*|воскресень\w*|январ\w*|феврал\w*|марта?\b|апрел\w*|ма[йя]\b|июн[яь]\b"
+    r"|июл[яь]\b|август\w*|сентябр\w*|октябр\w*|ноябр\w*|декабр\w*)"
+    r"|\d{4}-\d{2}-\d{2}|\b\d{1,2}\.\d{1,2}\b",
     re.IGNORECASE,
 )
-
-
-def _weekday_dates(request: str, today: date) -> dict[str, list[date]]:
-    """«в воскресенье» → ближайшее воскресенье. Если сегодня тот же день недели или сказано
-    «следующий», допустимы обе даты: сегодня/ближайшая и через неделю."""
-    found: dict[str, list[date]] = {}
-    for match in _WEEKDAY.finditer(request):
-        word = match.group(2).casefold()
-        weekday = next(i for i, stem in enumerate(_WEEKDAY_STEMS) if word.startswith(stem))
-        nearest = today + timedelta(days=(weekday - today.weekday()) % 7)
-        options = [nearest]
-        if nearest == today or (match.group(1) or "").casefold().startswith("следующ"):
-            options.append(nearest + timedelta(days=7))
-        found[match.group(0).casefold()] = options
-    return found
-
-
-def mentioned_dates(request: str, now: datetime) -> dict[str, date]:
-    """Даты, которые код может точно вычислить из запроса: «сегодня», «завтра», «через 3 дня»,
-    «в пятницу» (ближайшая пятница).
-
-    Остальные формулировки («15-го», «в конце месяца») не распознаются — их проверяет модель.
-    """
-    found: dict[str, date] = {}
-    today = now.date()
-    for phrase, options in _weekday_dates(request, today).items():
-        found[phrase] = options[0]
-    for match in _WORD.finditer(request):
-        word = match.group(1).casefold()
-        found[word] = today + timedelta(days=_RELATIVE_WORDS[word])
-    for match in _IN_DAYS.finditer(request):
-        raw = match.group(1).casefold()
-        days = int(raw) if raw.isdigit() else _NUMBER_WORDS.get(raw)
-        if days is not None:
-            found[match.group(0).casefold()] = today + timedelta(days=days)
-    return found
 
 
 def _plan_dates(plan: Plan) -> list[date]:
@@ -270,7 +229,7 @@ def check_relative_dates(
     if not mentioned or not planned:
         return [], []
     allowed = set(mentioned.values())
-    for options in _weekday_dates(request, now.date()).values():
+    for options in weekday_dates(request, now.date()).values():
         allowed.update(options)
     described = ", ".join(f"«{word}» = {day.isoformat()}" for word, day in mentioned.items())
     wrong = [d for d in planned if d not in allowed]
@@ -636,9 +595,11 @@ class Validator:
             raise ValueError("отказ без указания проблем")
         if dates_verified:
             # Даты уже точно проверил код; замечания модели о сроках — её ошибка счёта.
-            overruled = [i for i in issues if i.code == "wrong_deadline"]
+            overruled = [
+                i for i in issues if i.code == "wrong_deadline" or _DATE_TALK.search(i.detail)
+            ]
             if overruled:
-                issues = [i for i in issues if i.code != "wrong_deadline"]
+                issues = [i for i in issues if i not in overruled]
                 notes.append(
                     "Замечание модели о сроке отклонено: даты проверены кодом — "
                     + "; ".join(i.detail for i in overruled)

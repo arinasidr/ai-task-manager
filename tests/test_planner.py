@@ -758,3 +758,36 @@ def test_analyst_create_with_dependency(db: sqlite3.Connection) -> None:
         "add_dependency",
     ]
     assert plan_result.operations[1].args["due_time"] == "18:00:00"
+
+
+# ---------------------------------------------------------------- исправление дня недели
+
+
+def test_wrong_weekday_from_analyst_is_corrected_by_code(db: sqlite3.Connection) -> None:
+    # «к воскресенью» (18.10 при NOW 14.10), а аналитик поставил пятницу 16.10
+    planner = Planner()
+    result = planner.plan(
+        {
+            "intent": "create_task",
+            "tasks": [{"title": "Приготовить курицу", "deadline": "2026-10-16"}],
+        },
+        db,
+        request="добавь задачу приготовить курицу к воскресенью",
+        now=NOW,
+    )
+    assert result.operations[0].args["due_date"] == "2026-10-18"
+    assert any("исправлен кодом" in note for note in result.reasoning)
+    assert planner.deadline_fixes == [("tasks", 0, "2026-10-18")]
+
+
+def test_deadline_with_two_tasks_is_not_guessed(db: sqlite3.Connection) -> None:
+    tasks = [
+        {"title": "Курица", "deadline": "2026-10-16"},
+        {"title": "Салат", "deadline": "2026-10-17"},
+    ]
+    planner = Planner()
+    result = planner.plan(
+        {"intent": "create_task", "tasks": tasks}, db, request="к воскресенью", now=NOW
+    )
+    assert [op.args["due_date"] for op in result.operations] == ["2026-10-16", "2026-10-17"]
+    assert planner.deadline_fixes == []
