@@ -1,4 +1,4 @@
-"""A17: негативные диалоги с настоящими локальными моделями."""
+"""Негативные диалоги с настоящими локальными моделями."""
 
 import argparse
 import json
@@ -168,7 +168,7 @@ def score_case(case: dict, run: dict) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Негативные Evals A17")
+    parser = argparse.ArgumentParser(description="Негативные Evals")
     parser.add_argument("--only", nargs="+", help="ID сценариев для выборочного запуска")
     parser.add_argument("--output", type=Path, help="Файл результатов JSONL")
     args = parser.parse_args()

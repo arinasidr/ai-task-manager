@@ -1,14 +1,4 @@
-"""Подключение логов и трейсов (P14). Вызывается при сборке графа и при старте API.
-
-- **Логи** — `ATM_LOG_DIR/atm.log`: JSON-строки от логгеров `ai_task_manager.*` (вызовы Tools,
-  алерты A15, ошибки) и `uvicorn.error` (длительность `/chat`). Ротация: 5 МБ × 3 файла.
-- **Трейсы** — Phoenix по OTLP/HTTP (`ATM_PHOENIX_ENDPOINT`). Вызовы моделей и узлы LangGraph
-  перехватывает OpenInference-инструментация LangChain; ход диалога и Tools добавляются
-  вручную (`observability.tracing`).
-
-Оба канала необязательные: без настроек ничего не пишется и не отправляется. Если Phoenix не
-запущен, спаны теряются, а приложение работает как обычно.
-"""
+"""Подключение логов и трейсов. Вызывается при сборке графа и при старте API."""
 
 import json
 import logging
@@ -30,7 +20,7 @@ _STANDARD_FIELDS = set(vars(logging.makeLogRecord({}))) | {"message", "asctime"}
 
 
 class JsonFormatter(logging.Formatter):
-    """Одна строка — один JSON-объект: такие логи легко фильтровать и загружать в Loki."""
+    """Одна строка - один JSON-объект: такие логи легко фильтровать и загружать в Loki."""
 
     def format(self, record: logging.LogRecord) -> str:
         data = {
@@ -76,7 +66,7 @@ def setup_tracing(settings: Settings) -> bool:
         try:
             from openinference.instrumentation.langchain import LangChainInstrumentor
             from phoenix.otel import register
-        except ImportError:  # пакеты наблюдаемости не установлены — работаем без трейсов
+        except ImportError:  # пакеты наблюдаемости не установлены - работаем без трейсов
             logging.getLogger(__name__).warning(
                 "Трейсы выключены: не установлены arize-phoenix-otel и "
                 "openinference-instrumentation-langchain"

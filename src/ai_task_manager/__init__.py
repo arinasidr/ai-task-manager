@@ -1,4 +1,4 @@
-"""AI Task Manager — мультиагентная система управления личными задачами."""
+"""AI Task Manager - мультиагентная система управления личными задачами."""
 
 from importlib.metadata import PackageNotFoundError, version
 

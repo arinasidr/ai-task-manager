@@ -1,14 +1,4 @@
-"""Сборка рабочего workflow из настоящих агентов и обработка одного сообщения пользователя.
-
-    создать граф:  create_workflow(settings)
-    обработать:    run_chat(graph, settings, "Удали задачу #5")
-
-Порядок узлов: prepare → decision (Tev1) → route (выбор моделей) → analyst → planner → validator →
-(при отказе — снова planner с замечаниями, не больше MAX_VALIDATION_ATTEMPTS проверок) →
-act (выполнить или поставить на подтверждение) → finish (ответ пользователю) →
-propose_preference (P12: предложить запомнить замеченное предпочтение) → remember_reply.
-Короткий ответ «да/нет» на такое предложение обрабатывает preference_answer сразу после prepare.
-"""
+"""Сборка рабочего workflow из настоящих агентов и обработка одного сообщения пользователя."""
 
 import sqlite3
 import time
@@ -57,12 +47,12 @@ class ChatResult(BaseModel):
     analysis: dict[str, Any] | None = None
     plan: dict[str, Any] | None = None
     history_length: int = 0
-    # P12: предложенное в этом ходе предпочтение ждёт ответа «да/нет»
+    # предложенное в этом ходе предпочтение ждёт ответа «да/нет»
     preference_id: int | None = None
     decision_error: str | None = None
     agent_error_counts: dict[str, int] = Field(default_factory=dict)
     model_retry_counts: dict[str, int] = Field(default_factory=dict)
-    # P14: пройденные узлы графа и связь с трейсом в Phoenix
+    # пройденные узлы графа и связь с трейсом в Phoenix
     trajectory: list[dict[str, Any]] = Field(default_factory=list)
     trace_id: str | None = None
     duration_ms: float | None = None
@@ -86,10 +76,10 @@ def create_workflow(
     checkpointer: BaseCheckpointSaver | None = None,
     decision_node: Node | None = None,
 ):
-    """Граф из настоящих агентов. С `checkpointer` (A12) граф помнит диалог по conversation_id."""
+    """Граф из настоящих агентов. С `checkpointer` граф помнит диалог по conversation_id."""
     connect = connect or (lambda: db_connect(settings.database_path))
     llm_for = llm_for or ollama_factory(settings)
-    setup_observability(settings)  # P14: логи и трейсы, если заданы в настройках
+    setup_observability(settings)  # логи и трейсы, если заданы в настройках
     return build_graph(
         settings,
         analyst=make_analyst_node(llm_for=llm_for, connect=connect),
@@ -119,10 +109,10 @@ def run_chat(
         "timezone": settings.timezone,
     }
     started = time.perf_counter()
-    # P14: корневой спан хода — внутри него узлы графа, вызовы моделей и Tools
+    # корневой спан хода - внутри него узлы графа, вызовы моделей и Tools
     with chat_turn_span(message, conversation_id) as span:
         if isinstance(graph.checkpointer, SqliteSaver):
-            # память диалога (A11): история по conversation_id, ходы одного диалога по очереди
+            # память диалога: история по conversation_id, ходы одного диалога по очереди
             state = run_turn(graph, request)
         else:
             request["conversation_id"] = conversation_id or str(uuid.uuid4())

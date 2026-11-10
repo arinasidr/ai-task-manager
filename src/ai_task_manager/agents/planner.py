@@ -1,20 +1,4 @@
-"""Агент-планировщик.
-
-Получает разбор запроса от аналитика (`Analysis`), читает актуальные задачи из БД и строит план
-(`Plan`): какие Tools вызвать, нужно ли подтверждение, в каком порядке выполнять задачи.
-
-Как устроен:
-- **Действия с задачами** (создать, изменить, удалить, связать) план строит код. Аналитик уже
-  извлёк всё нужное, а перевод в вызовы Tools однозначен — LLM здесь только добавила бы ошибок
-  («не делаем LLM-агента для CRUD только ради количества», ТЗ, раздел 5). Код же проверяет, что
-  задачи существуют, связи не создают циклов и что нужно подтверждение.
-- **Планирование порядка** (`plan_tasks`) делает LLM: она взвешивает сроки, приоритеты,
-  зависимости и предпочтения и объясняет выбор. После неё код гарантирует жёсткие правила:
-  только существующие задачи, каждая один раз, зависимости соблюдены. Если модель не справилась
-  дважды, порядок строится по правилам (fallback), чтобы пользователь всё равно получил ответ.
-
-Планировщик только читает БД. Записывают Tools после валидатора и подтверждения.
-"""
+"""Агент-планировщик."""
 
 import difflib
 import heapq
@@ -92,16 +76,8 @@ def load_system_prompt() -> str:
     return build_prompt(PROMPT_PATH.read_text(encoding="utf-8"), [SKILL])
 
 
-# ---------------------------------------------------------------- сроки
-
-
 def deadline_fields(value: str | None, tz: ZoneInfo) -> dict[str, str | None]:
-    """Переводит срок из ответа аналитика в поля задачи БД.
-
-    «2026-10-20» — только дата; «2026-10-20T18:30:00+03:00» — момент: локальные дата и время,
-    часовой пояс (если смещение совпадает с поясом пользователя) и момент в UTC.
-    Некорректная дата (например, 31 февраля) — ValueError.
-    """
+    """Переводит срок из ответа аналитика в поля задачи БД."""
     empty: dict[str, str | None] = {
         "due_date": None,
         "due_time": None,
@@ -127,7 +103,7 @@ def deadline_fields(value: str | None, tz: ZoneInfo) -> dict[str, str | None]:
 
 
 def deadline_moment(fields: dict[str, Any], tz: ZoneInfo) -> datetime | None:
-    """Момент срока для сравнения: точное время, а для срока «на дату» — конец этого дня."""
+    """Момент срока для сравнения: точное время, а для срока «на дату» - конец этого дня."""
     if fields.get("due_at_utc"):
         moment = datetime.fromisoformat(fields["due_at_utc"])
         return moment if moment.tzinfo else moment.replace(tzinfo=UTC)
@@ -144,11 +120,7 @@ def _normalize_title(title: str) -> str:
 
 
 def _match_title(title: str, refs: dict[str, str]) -> str | None:
-    """Находит новую задачу по названию из связи: точно, по вхождению или по похожести.
-
-    Модели часто пишут в связях название чуть иначе, чем в списке задач («сбор данных» и
-    «Собрать данные для отчёта»).
-    """
+    """Находит новую задачу по названию из связи: точно, по вхождению или по похожести."""
     key = _normalize_title(title)
     if key in refs:
         return refs[key]
@@ -172,15 +144,7 @@ _ORDER_MARKERS = re.compile(
 def _order_from_request(
     request: str, tasks: list[Any], *, strict: bool = False
 ) -> tuple[int, int] | None:
-    """Порядок двух новых задач по тексту запроса: «сначала A, потом B» → (A, B).
-
-    Только для явных слов порядка и ровно двух задач; задачи ищутся в тексте по первому
-    слову названия. Если что-то не сходится — None, и пользователь получит вопрос.
-
-    `strict` — аналитик связи не дал вовсе: тогда слово порядка должно стоять перед первой
-    задачей («сначала») или между задачами («A, потом B»), а не где угодно в запросе
-    («добавь A и B, потом покажи список» — это не связь).
-    """
+    """Порядок двух новых задач по тексту запроса: «сначала A, потом B» → (A, B)."""
     if len(tasks) != 2 or not _ORDER_MARKERS.search(request):
         return None
     text = _normalize_title(request)
@@ -218,9 +182,6 @@ def _deadline_text(task: dict[str, Any]) -> str | None:
     return task["due_date"]
 
 
-# ---------------------------------------------------------------- граф зависимостей
-
-
 def _creates_cycle(connection: sqlite3.Connection, predecessor_id: int, successor_id: int) -> bool:
     """Создаст ли связь predecessor → successor цикл (только чтение, без вставки)."""
     if predecessor_id == successor_id:
@@ -243,11 +204,7 @@ def _creates_cycle(connection: sqlite3.Connection, predecessor_id: int, successo
 def _ordered_respecting_dependencies(
     task_ids: list[int], edges: set[tuple[int, int]], preferred: list[int]
 ) -> list[int]:
-    """Топологическая сортировка: зависимости соблюдены, остальное — как в `preferred`.
-
-    Kahn с очередью по позиции в `preferred`: из задач, которые уже можно начинать, первой идёт
-    та, что раньше в желаемом порядке.
-    """
+    """Топологическая сортировка: зависимости соблюдены, остальное - как в `preferred`."""
     rank = {task_id: index for index, task_id in enumerate(preferred)}
     allowed = set(task_ids)
     incoming = {task_id: 0 for task_id in task_ids}
@@ -272,9 +229,6 @@ def _ordered_respecting_dependencies(
     return result
 
 
-# ---------------------------------------------------------------- планировщик
-
-
 class Planner:
     def __init__(
         self,
@@ -294,7 +248,7 @@ class Planner:
         # чтобы валидатор сверял план с исправленными, а не с ошибочными связями аналитика.
         self.repaired_dependencies: list[ExtractedDependency] | None = None
         # Сроки, исправленные кодом по тексту запроса: ("tasks", индекс, срок) или
-        # ("updates", None, срок) — узел планировщика переносит их в разбор в State.
+        # ("updates", None, срок) - узел планировщика переносит их в разбор в State.
         self.deadline_fixes: list[tuple[str, int | None, str]] = []
 
     def plan(
@@ -307,7 +261,7 @@ class Planner:
         feedback: list[str] | None = None,
         preferences: dict[str, Any] | None = None,
     ) -> Plan:
-        """Строит план. `feedback` — замечания валидатора при повторной попытке."""
+        """Строит план. `feedback` - замечания валидатора при повторной попытке."""
         if not isinstance(analysis, Analysis):
             analysis = Analysis.model_validate(analysis)
         now = (now or datetime.now(UTC)).astimezone(self.tz)
@@ -368,13 +322,11 @@ class Planner:
             return analysis, [fix[1]]
         return analysis, []
 
-    # ---------------------------------------------------------- уточнение
-
     def _clarify(
         self, analysis: Analysis, missing: list[str], warnings: list[str] | tuple[str, ...] = ()
     ) -> Plan:
         # Предупреждения аналитика берём, только если уточнения требует он сам. Если отказ из-за
-        # проверок кода, причины — только найденные кодом.
+        # проверок кода, причины - только найденные кодом.
         from_analyst = analysis.warnings if analysis.intent in _ANALYST_DECIDES else []
         all_warnings = list(dict.fromkeys([*from_analyst, *warnings]))
         if analysis.message:
@@ -397,8 +349,6 @@ class Planner:
             reasoning=["Данных недостаточно для действия, нужен ответ пользователя"],
         )
 
-    # ---------------------------------------------------------- чтение
-
     def _plan_read(self, analysis: Analysis, connection: sqlite3.Connection, now: datetime) -> Plan:
         return Plan(
             intent="get_tasks",
@@ -407,8 +357,6 @@ class Planner:
             reasoning=["Запрос только на чтение: подтверждение не нужно"],
         )
 
-    # ---------------------------------------------------------- создание
-
     def _plan_create(
         self, analysis: Analysis, connection: sqlite3.Connection, now: datetime
     ) -> Plan:
@@ -416,7 +364,7 @@ class Planner:
             return self._clarify(analysis, ["title"])
 
         operations: list[Operation] = []
-        # Предупреждения аналитика — догадки модели; в плане действий их ставит только код.
+        # Предупреждения аналитика - догадки модели; в плане действий их ставит только код.
         warnings: list[str] = []
         reasoning: list[str] = []
         refs: dict[str, str] = {}
@@ -466,7 +414,7 @@ class Planner:
             broken = successor is None or predecessor is None or successor == predecessor
             if broken and len(dependencies) == 1:
                 # Аналитик ошибся в связи (например, «A ← A»), но порядок явно назван в запросе
-                # («сначала A, потом B») — восстанавливаем его кодом по тексту запроса.
+                # («сначала A, потом B») - восстанавливаем его кодом по тексту запроса.
                 recovered = _order_from_request(self._request, analysis.tasks)
                 if recovered is not None:
                     first, second = recovered
@@ -521,8 +469,6 @@ class Planner:
             reasoning=reasoning or ["Создание задач не требует подтверждения"],
         )
 
-    # ---------------------------------------------------------- изменение
-
     def _plan_update(
         self, analysis: Analysis, connection: sqlite3.Connection, now: datetime
     ) -> Plan:
@@ -541,7 +487,7 @@ class Planner:
 
         updates = dict(analysis.updates)
         operations: list[Operation] = []
-        # Предупреждения аналитика — догадки модели; в плане действий их ставит только код.
+        # Предупреждения аналитика - догадки модели; в плане действий их ставит только код.
         warnings: list[str] = []
         reasoning: list[str] = []
         requires_confirmation = False
@@ -623,8 +569,6 @@ class Planner:
             reasoning=reasoning or ["Изменение одной существующей задачи"],
         )
 
-    # ---------------------------------------------------------- удаление
-
     def _plan_delete(
         self, analysis: Analysis, connection: sqlite3.Connection, now: datetime
     ) -> Plan:
@@ -640,7 +584,7 @@ class Planner:
             plan.message_to_user = f"Задач {', '.join(f'#{i}' for i in missing)} нет. Проверьте ID."
             return plan
 
-        # Предупреждения аналитика — догадки модели; в плане действий их ставит только код.
+        # Предупреждения аналитика - догадки модели; в плане действий их ставит только код.
         warnings: list[str] = []
         details: list[str] = []
         for task_id in ids:
@@ -668,8 +612,6 @@ class Planner:
             ],
         )
 
-    # ---------------------------------------------------------- предпочтения
-
     def _plan_preference(
         self, analysis: Analysis, connection: sqlite3.Connection, now: datetime
     ) -> Plan:
@@ -680,10 +622,8 @@ class Planner:
             intent="update_preference",
             operations=[Operation(tool="update_preference", args=values)],
             message_to_user="Запомню это.",
-            reasoning=["Явная просьба запомнить: новое значение заменит прежнее (P04, раздел 5)"],
+            reasoning=["Явная просьба запомнить: новое значение заменит прежнее"],
         )
-
-    # ---------------------------------------------------------- планирование порядка
 
     def _plan_order(
         self,
@@ -869,13 +809,7 @@ class Planner:
 
 
 class _PreferenceFacts:
-    """Подтверждённые предпочтения → факты для плана (P12).
-
-    Как и даты, факты считает код: маленькая модель не сопоставит «созвоны» с «Созвон с
-    командой» и не посчитает рабочие дни до срока. Предпочтения не спорят с зависимостями,
-    сроками и явными приоритетами — они влияют на порядок только при прочих равных и
-    объясняются пользователю отдельной строкой.
-    """
+    """Подтверждённые предпочтения → факты для плана."""
 
     def __init__(
         self,
@@ -949,7 +883,7 @@ class _PreferenceFacts:
         if self.work_time:
             notes.append(f"Начать лучше {self.work_time}, как вам удобнее.")
         plan.message_to_user = "\n\n".join([plan.message_to_user, " ".join(notes)]).strip()
-        plan.reasoning.append("Применены подтверждённые предпочтения (P12): " + "; ".join(lines))
+        plan.reasoning.append("Применены подтверждённые предпочтения: " + "; ".join(lines))
         return plan
 
 
@@ -960,7 +894,7 @@ def _stem(word: str) -> str:
 
 
 def _days_left(moment: datetime | None, now: datetime) -> int | None:
-    """Сколько календарных дней до срока: 0 — сегодня, отрицательное — просрочено."""
+    """Сколько календарных дней до срока: 0 - сегодня, отрицательное - просрочено."""
     if moment is None:
         return None
     return (moment.astimezone(now.tzinfo).date() - now.date()).days

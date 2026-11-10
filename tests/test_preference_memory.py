@@ -1,4 +1,4 @@
-"""P12: поиск возможных предпочтений, ответ «да/нет», применение к плану, API памяти."""
+"""Поиск возможных предпочтений, ответ «да/нет», применение к плану, API памяти."""
 
 import json
 import sqlite3
@@ -33,9 +33,6 @@ from ai_task_manager.workflow.preferences import classify_answer
 MSK = ZoneInfo("Europe/Moscow")
 NOW = datetime(2026, 10, 14, 12, 0, tzinfo=MSK)  # среда
 SATURDAY = datetime(2026, 10, 17, 12, 0, tzinfo=MSK)
-
-
-# ---------------------------------------------------------------- поиск догадок
 
 
 @pytest.mark.parametrize(
@@ -134,7 +131,7 @@ def test_candidate_skips_already_confirmed_value() -> None:
         find_candidate(text, None, [], {"preferred_work_time": "evening"}, timezone="UTC") is None
     )
     changed = find_candidate(text, None, [], {"preferred_work_time": "утром"}, timezone="UTC")
-    assert changed is not None and changed.value == "вечером"  # смена значения — снова вопрос
+    assert changed is not None and changed.value == "вечером"  # смена значения - снова вопрос
     habit = done_tasks([20, 20, 20, 20, 20])
     # привычка не спорит с тем, что пользователь подтвердил сам
     assert find_candidate("", None, habit, {"preferred_work_time": "утром"}, timezone="UTC") is None
@@ -156,9 +153,6 @@ def test_candidate_skips_already_confirmed_value() -> None:
 )
 def test_answer_to_preference_question(message: str, expected: bool | None) -> None:
     assert classify_answer(message) is expected
-
-
-# ---------------------------------------------------------------- применение к плану
 
 
 @pytest.fixture
@@ -229,9 +223,6 @@ def test_plan_without_preferences_is_unchanged(db: sqlite3.Connection) -> None:
     assert "non_working_day" not in plan.warnings
 
 
-# ---------------------------------------------------------------- HTTP API
-
-
 @pytest.fixture
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("ATM_DATABASE_PATH", str(tmp_path / "tasks.db"))
@@ -264,7 +255,7 @@ def test_api_lists_and_confirms_proposal(client: TestClient) -> None:
     with closing(connect(path)) as connection:
         assert get_preferences(connection) == {"preferred_work_time": "вечером"}
 
-    # повторное подтверждение — конфликт, а не второе сохранение
+    # повторное подтверждение - конфликт, а не второе сохранение
     assert client.post(f"/api/v1/preferences/{proposal_id}/confirm").status_code == 409
 
 

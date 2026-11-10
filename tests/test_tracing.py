@@ -1,4 +1,4 @@
-"""P14: трейсы Tools, JSON-логи, траектория агентов (без Phoenix: спаны в памяти)."""
+"""Трейсы Tools, JSON-логи, траектория агентов (без Phoenix: спаны в памяти)."""
 
 import json
 import logging
@@ -26,7 +26,7 @@ if not isinstance(trace.get_tracer_provider(), TracerProvider):
     _provider = TracerProvider()
     _provider.add_span_processor(SimpleSpanProcessor(EXPORTER))
     trace.set_tracer_provider(_provider)
-else:  # провайдер уже задан другим тестом — подключаемся к нему
+else:  # провайдер уже задан другим тестом - подключаемся к нему
     trace.get_tracer_provider().add_span_processor(SimpleSpanProcessor(EXPORTER))
 
 
@@ -71,7 +71,7 @@ def test_tool_call_is_span_and_json_log(db: sqlite3.Connection, log_file: Path) 
     assert json.loads(span.attributes["input.value"]) == {"title": "Купить молоко"}
     assert json.loads(span.attributes["output.value"])["task_id"] == 1
     [line] = [r for r in records(log_file) if r["message"] == "tool_call"]
-    # уровень INFO включён — как в работе; поле аргументов не конфликтует с LogRecord.args
+    # уровень INFO включён - как в работе; поле аргументов не конфликтует с LogRecord.args
     assert line["tool"] == "create_task"
     assert line["tool_args"] == {"title": "Купить молоко"}
     assert line["status"] == "ok"

@@ -1,21 +1,4 @@
-"""Долгосрочная память в графе (P12): догадка → вопрос пользователю → ответ «да/нет».
-
-Два узла:
-
-    prepare → preference_answer ─┬─ ответ «да/нет» на прошлый вопрос ──────► remember_reply
-                                 └─ новый запрос → decision/route → … → finish
-    finish → propose_preference → remember_reply
-
-- `propose_preference` после ответа на запрос ищет возможное предпочтение
-  (`memory.inference`), сохраняет его как `proposed` и дописывает к ответу вопрос.
-  Догадка не влияет на планирование: планировщик читает только `confirmed` (AC-19).
-- `preference_answer` в начале следующего хода: короткое «да»/«нет» подтверждает или отклоняет
-  предложение кодом, без вызова моделей. Любое другое сообщение — новый запрос: вопрос
-  снимается, предложение остаётся неподтверждённым (его можно подтвердить через API).
-
-Ожидающий вопрос хранится в состоянии диалога (`pending_preference`, чекпоинтер A11/A12),
-а само предложение — в таблице `preferences` (A13).
-"""
+"""Долгосрочная память в графе: догадка → вопрос пользователю → ответ «да/нет»."""
 
 import json
 import re
@@ -48,7 +31,7 @@ _MAX_ANSWER_WORDS = 4
 
 
 def classify_answer(message: str) -> bool | None:
-    """True — «да», False — «нет», None — это не ответ на вопрос, а новый запрос."""
+    """True - «да», False - «нет», None - это не ответ на вопрос, а новый запрос."""
     text = " ".join(re.sub(r"[^\w\s-]", " ", message.casefold().replace("ё", "е")).split())
     if not text or len(text.split()) > _MAX_ANSWER_WORDS:
         return None
@@ -122,7 +105,7 @@ def make_preference_proposal_node(*, connect: Connect) -> Callable[[dict], dict]
             )
             if candidate is None:
                 return {}
-            # догадку из анализа или поведения спрашиваем один раз; повтор в тексте — новый повод
+            # догадку из анализа или поведения спрашиваем один раз; повтор в тексте - новый повод
             if candidate.source != "text" and _already_proposed(
                 connection, candidate.kind, candidate.value
             ):
@@ -130,7 +113,7 @@ def make_preference_proposal_node(*, connect: Connect) -> Callable[[dict], dict]
             try:
                 proposal = propose_preference(connection, candidate.kind, candidate.value)
             except ValueError:
-                # уже действует или пользователь раньше отказался — не переспрашиваем
+                # уже действует или пользователь раньше отказался - не переспрашиваем
                 return {}
             connection.commit()
 

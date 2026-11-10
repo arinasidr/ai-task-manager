@@ -71,9 +71,6 @@ def snapshot(db: sqlite3.Connection) -> list[tuple]:
     return [tuple(row) for row in tasks] + [tuple(row) for row in deps]
 
 
-# ---------------------------------------------------------------- сроки
-
-
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -103,9 +100,6 @@ def test_deadline_fields(value: str | None, expected: dict[str, str | None]) -> 
 def test_deadline_fields_rejects_impossible_date() -> None:
     with pytest.raises(ValueError):
         deadline_fields("2027-02-31", MSK)
-
-
-# ---------------------------------------------------------------- создание
 
 
 def test_create_single_task_without_invented_fields(db: sqlite3.Connection) -> None:
@@ -311,9 +305,6 @@ def test_no_dependency_invented_without_order(db: sqlite3.Connection, request_te
     assert [op.tool for op in result.operations] == ["create_task", "create_task"]
 
 
-# ---------------------------------------------------------------- изменение
-
-
 def test_update_deadline_of_existing_task(db: sqlite3.Connection) -> None:
     task = add(db, "Отчёт")
     result = plan(
@@ -427,9 +418,6 @@ def test_clarification_keeps_analyst_warnings(db: sqlite3.Connection) -> None:
     assert result.warnings == ["invalid_date"]
 
 
-# ---------------------------------------------------------------- удаление
-
-
 def test_delete_always_requires_confirmation_and_reports_links(db: sqlite3.Connection) -> None:
     a, b = add(db, "A"), add(db, "B")
     link(db, a, b)
@@ -465,9 +453,6 @@ def test_delete_unknown_task(db: sqlite3.Connection) -> None:
     assert "task_not_found" in result.warnings
 
 
-# ---------------------------------------------------------------- прочие намерения
-
-
 def test_clarification_is_passed_through(db: sqlite3.Connection) -> None:
     result = plan(db, {"intent": "clarification_required", "missing_fields": ["task_id"]})
     assert result.needs_clarification
@@ -485,9 +470,6 @@ def test_preference_update(db: sqlite3.Connection) -> None:
         db, {"intent": "update_preference", "updates": {"preferred_work_time": "evening"}}
     )
     assert result.operations[0].args == {"preferred_work_time": "evening"}
-
-
-# ---------------------------------------------------------------- планирование порядка
 
 
 @pytest.fixture
@@ -560,7 +542,7 @@ def test_code_repairs_llm_order(db: sqlite3.Connection, chain: dict[str, int]) -
     assert order.index(chain["data"]) < order.index(chain["report"])
     assert 77 not in order
     assert all(r.task_id != 77 for r in result.recommendations)
-    # у задачи уже есть приоритет пользователя — рекомендация другого не допускается
+    # у задачи уже есть приоритет пользователя - рекомендация другого не допускается
     assert (
         next(r for r in result.recommendations if r.task_id == chain["bug"]).recommended_priority
         is None
@@ -574,7 +556,7 @@ def test_forgotten_tasks_are_appended_by_deadline(
 ) -> None:
     llm = FakeLLM({"ordered_task_ids": [chain["notes"]], "recommendations": [], "message": "x"})
     result = plan(db, {"intent": "plan_tasks"}, llm)
-    # notes — по решению модели первая; остальные по правилам: баг (15.10), данные, отчёт
+    # notes - по решению модели первая; остальные по правилам: баг (15.10), данные, отчёт
     assert result.ordered_task_ids == [chain["notes"], chain["bug"], chain["data"], chain["report"]]
 
 
@@ -588,7 +570,7 @@ def test_fallback_after_two_bad_llm_answers(db: sqlite3.Connection, chain: dict[
     order = result.ordered_task_ids
     assert order.index(chain["data"]) < order.index(chain["report"])
     assert order[0] == chain["bug"]  # самый ранний срок и высокий приоритет
-    assert order[-1] == chain["notes"]  # без срока и приоритета — в конце
+    assert order[-1] == chain["notes"]  # без срока и приоритета - в конце
 
 
 def test_llm_retry_count_resets_for_next_plan(
@@ -641,9 +623,6 @@ def test_validator_feedback_reaches_llm(db: sqlite3.Connection, chain: dict[str,
     assert llm.calls[0]["user"]["validator_feedback"] == ["Отчёт стоит раньше данных"]
 
 
-# ---------------------------------------------------------------- общие гарантии
-
-
 @pytest.mark.parametrize(
     "analysis",
     [
@@ -691,9 +670,6 @@ def test_parse_json_object_rejects(text: str) -> None:
         parse_json_object(text)
 
 
-# ---------------------------------------------------------------- связка с аналитиком (A09)
-
-
 def test_analyst_result_object_is_accepted(db: sqlite3.Connection) -> None:
     task = add(db, "Отчёт", due_date="2026-10-20")
     result = AnalystResult.model_validate(
@@ -701,7 +677,7 @@ def test_analyst_result_object_is_accepted(db: sqlite3.Connection) -> None:
     )
     plan_result = plan(db, result)
     op = plan_result.operations[0]
-    # у аналитика незаполненные поля updates равны None — это «не менять», а не «стереть»
+    # у аналитика незаполненные поля updates равны None - это «не менять», а не «стереть»
     assert op.tool == "update_task"
     assert op.args["updates"] == {"priority": "high"}
     assert [o.tool for o in plan_result.operations] == ["update_task"]
@@ -758,9 +734,6 @@ def test_analyst_create_with_dependency(db: sqlite3.Connection) -> None:
         "add_dependency",
     ]
     assert plan_result.operations[1].args["due_time"] == "18:00:00"
-
-
-# ---------------------------------------------------------------- исправление дня недели
 
 
 def test_wrong_weekday_from_analyst_is_corrected_by_code(db: sqlite3.Connection) -> None:

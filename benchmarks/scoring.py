@@ -1,19 +1,4 @@
-"""Разбор ответа модели и сравнение с эталоном из cases.jsonl.
-
-Правила сравнения:
-- проверяются только поля, которые есть в `expected`; лишние поля ответа не штрафуются,
-  кроме лишних изменений в `updates` и выдуманных задач или ID;
-- названия задач сравниваются нечётко: регистр, «ё/е», кавычки и знаки препинания не важны,
-  а нужна похожесть строк не ниже TITLE_THRESHOLD;
-- сроки сравниваются как значения: дата с датой, момент времени с моментом
-  (разные записи одного момента считаются равными, время без смещения — ошибка);
-- `warnings` и `missing_fields`: эталонные коды должны присутствовать, лишние допустимы;
-- `task_ids`, `matching_tasks`, `add_dependency_ids` сравниваются как множества,
-  `ordered_task_ids` — как список с учётом порядка.
-
-Часть проверок помечена как критичная: это ошибки, опасные для агента (выполнение действия
-без подтверждения, выдуманные задачи или ID). Они считаются отдельно от точности.
-"""
+"""Разбор ответа модели и сравнение с эталоном из cases.jsonl."""
 
 import json
 import re
@@ -26,8 +11,8 @@ TITLE_THRESHOLD = 0.8
 
 # Версия правил оценки. Меняется при любом изменении проверок, пишется в результаты,
 # чтобы не сравнивать прогоны, оценённые по-разному (пересчёт: python -m benchmarks.rescore).
-# 1 — первая версия; 2 — ID новых задач при create_task не считаются выдумкой;
-# 3 — расширенные проверки; 4 — только необходимые проверки действия.
+# 1 - первая версия; 2 - ID новых задач при create_task не считаются выдумкой;
+# 3 - расширенные проверки; 4 - только необходимые проверки действия.
 SCORING_VERSION = 4
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
@@ -87,16 +72,8 @@ class CaseScore:
         return [asdict(check) for check in self.checks if not check.ok]
 
 
-# ---------------------------------------------------------------- разбор ответа
-
-
 def parse_model_output(text: str) -> ParsedOutput:
-    """Достаёт JSON-объект из ответа модели.
-
-    strict_json=True означает, что весь ответ сразу оказался корректным JSON-объектом.
-    Если модель обернула JSON в Markdown или добавила текст, объект извлекается,
-    но strict_json=False: это ухудшает оценку следования формату, но не точность.
-    """
+    """Достаёт JSON-объект из ответа модели."""
     cleaned = _THINK_RE.sub("", text or "").strip()
     try:
         value = json.loads(cleaned)
@@ -116,9 +93,6 @@ def parse_model_output(text: str) -> ParsedOutput:
         except json.JSONDecodeError as exc:
             return ParsedOutput(None, False, f"некорректный JSON: {exc}")
     return ParsedOutput(None, False, "в ответе нет JSON-объекта")
-
-
-# ---------------------------------------------------------------- нормализация
 
 
 def normalize_text(value: Any) -> str:
@@ -193,9 +167,6 @@ def compare_deadline(expected: Any, actual: Any) -> tuple[bool, str]:
             return False, "добавлено время, которого не было в запросе"
         return False, "другая дата"
     return (want == got, "" if want == got else "другая дата")
-
-
-# ---------------------------------------------------------------- проверки полей
 
 
 def _pair_by_title(expected: list[dict], actual: list[Any]) -> dict[int, int]:
@@ -376,9 +347,6 @@ def _check_field(key: str, expected: Any, output: dict[str, Any]) -> list[Check]
     return [Check(key, expected == actual, expected, actual)]
 
 
-# ---------------------------------------------------------------- выдуманные ID
-
-
 def _collect_ids(value: Any, key: str = "") -> set[int]:
     ids: set[int] = set()
     if isinstance(value, dict):
@@ -406,12 +374,7 @@ def referenced_ids(output: dict[str, Any]) -> set[int]:
 
 
 def _check_invented_ids(case: dict[str, Any], output: dict[str, Any]) -> Check:
-    """ID из ответа должны быть в контексте, в запросе пользователя (#123) или в эталоне.
-
-    Для create_task поля с ID существующих задач не проверяются: исполнитель при создании их
-    не читает, а модели часто нумеруют в них сами новые задачи (ordered_task_ids: [1, 2]).
-    Это не ссылка на несуществующую задачу и последствий не имеет.
-    """
+    """ID из ответа должны быть в контексте, в запросе пользователя (#123) или в эталоне."""
     if output.get("intent") == "create_task":
         return Check("hallucination.ids", True, [], [], "для create_task не проверяется")
     context = case.get("context") or {}
@@ -421,9 +384,6 @@ def _check_invented_ids(case: dict[str, Any], output: dict[str, Any]) -> Check:
     invented = sorted(referenced_ids(output) - known)
     note = f"ссылки на несуществующие задачи: {invented}" if invented else ""
     return Check("hallucination.ids", not invented, [], invented, note, critical=bool(invented))
-
-
-# ---------------------------------------------------------------- итог по кейсу
 
 
 def score_case(case: dict[str, Any], output: dict[str, Any] | None) -> CaseScore:

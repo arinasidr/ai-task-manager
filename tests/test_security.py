@@ -1,22 +1,4 @@
-"""P15. Тест безопасности: агент не может выполнить запрещённую операцию.
-
-Модели в этих тестах «взломаны»: аналитик, планировщик и валидатор отвечают так, как ответила
-бы модель после prompt injection или ошибки. Проверяется не то, что модель ведёт себя хорошо,
-а то, что **код** не даёт плохому ответу дойти до базы:
-
-- набор Tools: у агента нет операций с файлами, командами и сетью
-  (test_agent_has_no_system_tools);
-- аналитик (код): ID, которых пользователь не называл, отклоняются
-  (test_invented_task_id_is_rejected);
-- валидатор (код): лишние операции, чужие задачи, удаление без подтверждения
-  (test_compromised_*);
-- исполнитель: удаление и завершение с блокерами — только с подтверждением
-  (test_executor_refuses_*, test_action_node_*);
-- подтверждение: устаревшее, отменённое, просроченное, повторное — не выполняется
-  (test_confirmation_*).
-
-Изоляция окружения (песочница P13) — следующий уровень: `deploy/sandbox/check_isolation.py`.
-"""
+"""Тест безопасности: агент не может выполнить запрещённую операцию."""
 
 import json
 import logging
@@ -127,9 +109,6 @@ def invoke(graph, message: str) -> dict:
     )
 
 
-# ---------------------------------------------------------------- набор Tools
-
-
 def test_agent_has_no_system_tools() -> None:
     """Агент управляет только задачами: команд, файлов и сети в наборе Tools нет."""
     assert set(typing.get_args(ToolName)) == {
@@ -145,9 +124,6 @@ def test_agent_has_no_system_tools() -> None:
     for tool in ("run_shell", "read_file", "http_request", "drop_table", "delete_all_tasks"):
         with pytest.raises(ValidationError):
             Plan.model_validate({"intent": "create_task", "operations": [{"tool": tool}]})
-
-
-# ---------------------------------------------------------------- через весь граф
 
 
 def test_delete_without_confirmation_is_impossible_even_if_user_insists(
@@ -285,9 +261,6 @@ def test_compromised_planner_touches_task_user_did_not_name(
     assert snapshot(db) == before
 
 
-# ---------------------------------------------------------------- исполнитель
-
-
 def test_executor_refuses_dangerous_plan_even_if_validator_is_bypassed(
     db: sqlite3.Connection, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -312,7 +285,7 @@ def test_executor_refuses_dangerous_plan_even_if_validator_is_bypassed(
 
     assert snapshot(db) == before
     blocked = [r for r in caplog.records if r.getMessage() == "tool_blocked_without_confirmation"]
-    assert len(blocked) == 2  # каждая попытка записана в лог (P14)
+    assert len(blocked) == 2  # каждая попытка записана в лог
 
 
 def test_action_node_queues_dangerous_plan_instead_of_running_it(
@@ -332,9 +305,6 @@ def test_action_node_queues_dangerous_plan_instead_of_running_it(
 
     assert update["pending_action_id"] is not None
     assert snapshot(db) == before
-
-
-# ---------------------------------------------------------------- подтверждение
 
 
 @pytest.fixture

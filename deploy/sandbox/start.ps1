@@ -1,5 +1,5 @@
-﻿# Запуск API AI Task Manager внутри песочницы (P13). Окно остаётся занятым, пока работает
-# сервер; остановка — Ctrl+C. API доступно с хоста: http://localhost:8000/docs
+﻿# Запуск API AI Task Manager внутри песочницы. Окно остаётся занятым, пока работает
+# сервер; остановка - Ctrl+C. API доступно с хоста: http://localhost:8000/docs
 #
 #   powershell -ExecutionPolicy Bypass -File deploy\sandbox\start.ps1
 

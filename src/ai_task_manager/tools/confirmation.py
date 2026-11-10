@@ -1,16 +1,4 @@
-"""Подтверждение опасных операций из агентного пути.
-
-Путь: валидатор принял план → если план опасный, он сохраняется как ожидающее действие
-(`operations`, тип `agent_plan`) вместе с предварительным просмотром → пользователь видит, что
-именно изменится, и подтверждает (`POST /api/v1/actions/{id}/confirm`) или отменяет (`/cancel`).
-
-Почему ожидающее действие в БД, а не пауза графа (`interrupt()`): подтверждение приходит
-отдельным HTTP-запросом, возможно после перезапуска сервера. Таблица `operations` (A07) уже
-хранит срок действия (10 минут) и версии затронутых задач, поэтому, если задачу изменили после
-показа плана, подтверждение не сработает.
-
-При подтверждении план проверяется кодом ещё раз и выполняется одной транзакцией.
-"""
+"""Подтверждение опасных операций из агентного пути."""
 
 import json
 import sqlite3
@@ -47,9 +35,6 @@ _PREFERENCE_TEXT = {
 }
 
 
-# ---------------------------------------------------------------- предварительный план
-
-
 def _task_name(connection: sqlite3.Connection, value: Any, titles: dict[str, str]) -> str:
     if isinstance(value, str) and value.startswith("$"):
         return f"«{titles.get(value[1:], value)}» (новая)"
@@ -71,7 +56,7 @@ def _changes_text(updates: dict[str, Any]) -> str:
 
 
 def describe_plan(connection: sqlite3.Connection, plan: Plan) -> list[str]:
-    """Что именно изменится — по строке на операцию, с названиями задач из БД."""
+    """Что именно изменится - по строке на операцию, с названиями задач из БД."""
     titles = {op.ref: op.args.get("title", "") for op in plan.operations if op.ref}
     lines: list[str] = []
     for op in plan.operations:
@@ -122,9 +107,6 @@ def describe_plan(connection: sqlite3.Connection, plan: Plan) -> list[str]:
     return lines
 
 
-# ---------------------------------------------------------------- ожидающее действие
-
-
 class PendingPlan(BaseModel):
     action_id: str
     preview: list[str]
@@ -171,11 +153,7 @@ def prepare_plan_action(connection: sqlite3.Connection, plan: Plan, request: str
 def confirm_plan_action(
     action_id: str, db_path: str | Path | None = None
 ) -> ExecutionResult | None:
-    """Выполняет подтверждённый план. None — действие уже было подтверждено раньше.
-
-    Перед выполнением проверяется: действие ждёт подтверждения, срок не истёк, затронутые задачи
-    не менялись после показа плана (A07), и план всё ещё проходит проверки кода валидатора.
-    """
+    """Выполняет подтверждённый план. None - действие уже было подтверждено раньше."""
     connection = connect(db_path)
     try:
         connection.execute("BEGIN IMMEDIATE")
@@ -193,7 +171,7 @@ def confirm_plan_action(
         if issues:
             raise ValueError("План больше не корректен: " + "; ".join(d for _, d in issues))
 
-        # P14: подтверждение приходит отдельным HTTP-запросом — свой корневой спан
+        # подтверждение приходит отдельным HTTP-запросом - свой корневой спан
         with tracer.start_as_current_span("confirm_action") as span:
             span.set_attribute(SPAN_KIND, "AGENT")
             span.set_attribute(INPUT, action_id)
@@ -221,9 +199,6 @@ def confirm_plan_action(
         raise
     finally:
         connection.close()
-
-
-# ---------------------------------------------------------------- ответы пользователю
 
 
 def _tasks_reply(tasks: list[dict[str, Any]]) -> str:
@@ -257,17 +232,10 @@ def pending_reply(plan: Plan, pending: PendingPlan) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------- узел графа
-
-
 def make_action_node(
     *, connect: Callable[[], sqlite3.Connection]
 ) -> Callable[[dict[str, Any]], dict[str, Any]]:
-    """Узел LangGraph после валидатора: выполняет принятый план или ставит его на подтверждение.
-
-    Пишет в State `reply` и `pending_action_id`. Отклонённые планы не трогает — повторы и ответ
-    при отказе решает workflow.
-    """
+    """Узел LangGraph после валидатора: выполняет принятый план или ставит его на подтверждение."""
 
     def action_node(state: dict[str, Any]) -> dict[str, Any]:
         verdict = state.get("verdict") or {}

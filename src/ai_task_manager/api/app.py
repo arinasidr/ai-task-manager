@@ -24,7 +24,7 @@ logger = logging.getLogger("uvicorn.error")
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     init_db()  # при запуске: создать таблицы если их нет
-    # P14: логи в ATM_LOG_DIR и трейсы в Phoenix — до первого запроса, в том числе /actions
+    # логи в ATM_LOG_DIR и трейсы в Phoenix - до первого запроса, в том числе /actions
     setup_observability(get_settings())
     yield  # после этого FastAPI начинает обслуживать запросы
 

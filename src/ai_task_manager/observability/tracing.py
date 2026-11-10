@@ -1,9 +1,4 @@
-"""Ручные спаны и записи: ход диалога, вызовы Tools, траектория агентов (P14).
-
-Спаны размечены атрибутами OpenInference (`openinference.span.kind`, `input.value`,
-`output.value`, `session.id`): Phoenix показывает их как шаги агента и группирует ходы одного
-диалога в сессию. Без настроенного Phoenix это no-op спаны OpenTelemetry — ничего не стоит.
-"""
+"""Ручные спаны и записи: ход диалога, вызовы Tools, траектория агентов."""
 
 import json
 import logging
@@ -31,11 +26,7 @@ def _json(value: Any, limit: int = 4000) -> str:
 
 
 def _parent_context() -> Any:
-    """Контекст текущего узла LangGraph, чтобы спан Tool лёг внутрь узла `act` в Phoenix.
-
-    Инструментация LangChain ведёт свои спаны вне контекста OpenTelemetry, поэтому берём
-    текущий спан у неё. Без инструментации — обычный текущий контекст.
-    """
+    """Контекст текущего узла LangGraph, чтобы спан Tool лёг внутрь узла `act` в Phoenix."""
     try:
         from openinference.instrumentation.langchain import get_current_span
     except ImportError:
@@ -51,7 +42,7 @@ def current_trace_id() -> str | None:
 
 @contextmanager
 def chat_turn_span(message: str, conversation_id: str | None) -> Iterator[trace.Span]:
-    """Корневой спан хода: внутри него — узлы графа, вызовы моделей и Tools."""
+    """Корневой спан хода: внутри него - узлы графа, вызовы моделей и Tools."""
     with tracer.start_as_current_span("chat_turn") as span:
         span.set_attribute(SPAN_KIND, "AGENT")
         span.set_attribute(INPUT, message)
@@ -62,10 +53,7 @@ def chat_turn_span(message: str, conversation_id: str | None) -> Iterator[trace.
 
 @contextmanager
 def tool_call(tool: str, args: dict[str, Any]) -> Iterator[dict[str, Any]]:
-    """Вызов одного Tool: спан TOOL + JSON-строка в atm.log.
-
-    В словарь, который отдаёт контекст, вызывающий кладёт результат (`out["result"] = …`).
-    """
+    """Вызов одного Tool: спан TOOL + JSON-строка в atm.log."""
     out: dict[str, Any] = {}
     started = time.perf_counter()
     with tracer.start_as_current_span(f"tool.{tool}", context=_parent_context()) as span:
@@ -107,6 +95,6 @@ def log_tools_event(event: str, **fields: Any) -> None:
     """События исполнителя вне одного Tool: откат плана, блокировка без подтверждения."""
     span = trace.get_current_span()
     span.add_event(event, {k: _json(v) for k, v in fields.items()})
-    # ключи extra не должны совпадать с полями LogRecord (args, msg, name…) — префикс
+    # ключи extra не должны совпадать с полями LogRecord (args, msg, name…) - префикс
     extra = {f"event_{key}": value for key, value in fields.items()}
     tools_logger.warning(event, extra={**extra, "trace_id": current_trace_id()})

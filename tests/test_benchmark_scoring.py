@@ -48,9 +48,6 @@ def test_system_prompt_does_not_leak_test_inputs() -> None:
     assert leaked == []
 
 
-# ---------------------------------------------------------------- разбор ответа
-
-
 def test_parse_plain_json_is_strict() -> None:
     parsed = parse_model_output('{"intent": "get_tasks"}')
     assert parsed.data == {"intent": "get_tasks"}
@@ -87,9 +84,6 @@ def test_unparsed_answer_scores_zero() -> None:
     assert result.score == 0
 
 
-# ---------------------------------------------------------------- сроки
-
-
 @pytest.mark.parametrize(
     ("expected", "actual", "ok"),
     [
@@ -108,9 +102,6 @@ def test_unparsed_answer_scores_zero() -> None:
 )
 def test_compare_deadline(expected, actual, ok: bool) -> None:
     assert compare_deadline(expected, actual)[0] is ok
-
-
-# ---------------------------------------------------------------- типичные ошибки моделей
 
 
 def test_titles_ignore_case_yo_and_quotes() -> None:
@@ -222,7 +213,7 @@ def test_schema_rejects_bad_answer() -> None:
 
 
 def test_ids_in_create_task_are_not_hallucination() -> None:
-    # модели нумеруют новые задачи в ordered_task_ids — при создании это поле не читается
+    # модели нумеруют новые задачи в ordered_task_ids - при создании это поле не читается
     case = CASES_BY_ID["TEST_02"]
     answer = complete(case["expected"])
     answer["ordered_task_ids"] = [1, 2]

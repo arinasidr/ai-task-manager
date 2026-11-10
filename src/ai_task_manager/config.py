@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
 
     analyst_model: str = "gemma4:e2b"
-    # модель планировщика (предварительный выбор A05); позже её будет выбирать роутер
+    # модель планировщика
     planner_model: str = "gemma4:e2b"
     # часовой пояс пользователя по умолчанию: сроки «на дату», сравнение сроков
     timezone: str = "Europe/Moscow"
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     decision_model: str = "tev1:0.8b-q8_0"
     validator_model: str = "ministral-3:3b"
 
-    # Наблюдаемость (P14). Пусто — выключено: тесты и запуск без Phoenix ничего не пишут.
+    # Наблюдаемость. Пусто - выключено: тесты и запуск без Phoenix ничего не пишут.
     # Каталог логов: atm.log (JSON-строки: Tools, алерты, ошибки) и trajectories.jsonl.
     log_dir: str | None = None
     # OTLP/HTTP-адрес Phoenix, например http://localhost:6006/v1/traces

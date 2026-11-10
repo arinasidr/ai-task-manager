@@ -1,10 +1,4 @@
-"""Клиенты движков для запуска LLM.
-
-- OllamaBackend — родной API Ollama (/api/chat). Отдаёт точные счётчики токенов и время
-  генерации, поэтому скорость считается без учёта сети и загрузки модели.
-- OpenAIBackend — любой OpenAI-совместимый сервер (llama.cpp `llama-server`, vLLM, LM Studio).
-  Нужен для сравнения движков тем же набором тестов (задача P04).
-"""
+"""Клиенты движков для запуска LLM."""
 
 import time
 from dataclasses import dataclass, field
@@ -175,7 +169,7 @@ class OllamaBackend:
                 return {
                     "size_gb": round(size / 1024**3, 2),
                     "size_vram_gb": round(vram / 1024**3, 2),
-                    # доля модели в видеопамяти: меньше 1 — часть слоёв считается на процессоре
+                    # доля модели в видеопамяти: меньше 1 - часть слоёв считается на процессоре
                     "gpu_share": round(vram / size, 2) if size else None,
                     "context_length": item.get("context_length"),
                 }

@@ -29,7 +29,7 @@ class WorkflowState(TypedDict):
     validation_attempts: NotRequired[int]
     agent_error_counts: NotRequired[dict[str, int]]
     model_retry_counts: NotRequired[dict[str, int]]
-    # P14: пройденные узлы графа с длительностью и итогом шага
+    # пройденные узлы графа с длительностью и итогом шага
     trajectory: NotRequired[list[dict[str, Any]]]
     fast_retry_done: NotRequired[bool]
 
@@ -42,7 +42,7 @@ class WorkflowState(TypedDict):
     decision: NotRequired[dict[str, Any] | None]
     decision_error: NotRequired[str | None]
 
-    # P12: предложенное предпочтение, на которое ждём «да/нет» (живёт между ходами диалога)
+    # предложенное предпочтение, на которое ждём «да/нет» (живёт между ходами диалога)
     pending_preference: NotRequired[dict[str, Any] | None]
-    # P12: id предложения, заданного в этом ходе (для ответа API)
+    # id предложения, заданного в этом ходе (для ответа API)
     preference_id: NotRequired[int | None]

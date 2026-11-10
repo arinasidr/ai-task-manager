@@ -17,10 +17,7 @@ def confirm_delete_task(
     action_id: str,
     db_path: str | Path | None = None,
 ) -> bool:
-    """Удаляет задачу и подтверждает операцию в одной транзакции.
-
-    Вызывается после согласия пользователя; повторное подтверждение возвращает False.
-    """
+    """Удаляет задачу и подтверждает операцию в одной транзакции."""
     connection = connect(db_path)
     try:
         connection.execute("BEGIN IMMEDIATE")

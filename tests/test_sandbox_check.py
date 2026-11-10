@@ -1,4 +1,4 @@
-"""P13: разбор результатов проверки изоляции (deploy/sandbox/check_isolation.py)."""
+"""Разбор результатов проверки изоляции (deploy/sandbox/check_isolation.py)."""
 
 import importlib.util
 from pathlib import Path
@@ -33,7 +33,7 @@ def test_host_shares_are_found_in_mounts() -> None:
         (None, "URLError: Tunnel connection failed: 403 Forbidden", "blocked"),
         (403, "HTTP 403", "blocked"),
         (200, None, "open"),
-        (404, "HTTP 404", "open"),  # сервер ответил — значит, сеть пропустила
+        (404, "HTTP 404", "open"),  # сервер ответил - значит, сеть пропустила
     ],
 )
 def test_proxy_refusal_counts_as_blocked(status, error, expected) -> None:

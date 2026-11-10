@@ -1,4 +1,4 @@
-"""P16: бенчмарк производительности в режиме mock — то же, что запускает CI."""
+"""Бенчмарк производительности в режиме mock - то же, что запускает CI."""
 
 import json
 from pathlib import Path
@@ -39,7 +39,7 @@ def test_routing_saves_time_on_read_requests(tmp_path: Path) -> None:
     )
 
     report = json.loads(output.read_text(encoding="utf-8"))
-    # запросы чтения при роутинге идут на быструю модель, без него — на основную
+    # запросы чтения при роутинге идут на быструю модель, без него - на основную
     read_models = {t["models"]["analyst"] for t in report["turns"] if t["expected"] == "listed"}
     assert read_models == {"qwen3:1.7b", "gemma4:e2b"}
     assert report["routing"]["read_saving_percent"] > 30

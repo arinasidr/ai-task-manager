@@ -45,7 +45,7 @@ _PLANNABLE = frozenset(
 
 
 # Сколько раз валидатор может проверить план за один запрос: первая проверка + один повтор
-# планировщика с замечаниями. Дальше — ответ пользователю, без зацикливания (ТЗ, FR-20).
+# планировщика с замечаниями. Дальше - ответ пользователю, без зацикливания (ТЗ, FR-20).
 MAX_VALIDATION_ATTEMPTS = 2
 
 
@@ -61,17 +61,8 @@ def build_graph(
     preference_answer: Node | None = None,
     propose_preference: Node | None = None,
 ):
-    """Граф: prepare → [preference_answer] → [decision] → route → analyst → planner →
-    validator → act → finish → [propose_preference] → remember_reply.
-
-    Узлы в скобках можно пропустить в изолированных тестах. `preference_answer` отвечает на
-    «да/нет» по предложенному предпочтению и сразу ведёт к `remember_reply` (P12).
-
-    После отказа валидатора план возвращается планировщику с замечаниями, если план строила
-    модель (`source = "llm"`) и лимит проверок не исчерпан. План, построенный кодом, от
-    замечаний не изменится — повтор бессмыслен, сразу ответ пользователю. `finish` гарантирует
-    ответ, `remember_reply` сохраняет его в историю диалога.
-    """
+    """Граф: prepare → [preference_answer] → [decision] → route → analyst → planner → validator →
+    act → finish → [propose_preference] → remember_reply."""
     graph = StateGraph(WorkflowState)
 
     def prepare(state: WorkflowState) -> dict[str, Any]:
@@ -96,7 +87,7 @@ def build_graph(
             ],
             "decision": None,
             "decision_error": None,
-            # pending_preference не сбрасываем: это вопрос из прошлого хода (P12)
+            # pending_preference не сбрасываем: это вопрос из прошлого хода
             "preference_id": None,
             "agent_error_counts": {},
             "model_retry_counts": {},
@@ -119,7 +110,7 @@ def build_graph(
         }
 
     def add_node(name: str, node: Node) -> None:
-        # P14: каждый шаг (кроме prepare, который начинает траекторию заново) попадает в
+        # каждый шаг (кроме prepare, который начинает траекторию заново) попадает в
         # state["trajectory"] с длительностью и кратким итогом
         graph.add_node(name, trajectory_node(name, node))
 

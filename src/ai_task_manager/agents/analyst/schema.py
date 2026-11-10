@@ -67,7 +67,7 @@ class AnalystInput(StrictModel):
 
 
 class BlankAsNone(StrictModel):
-    """Пустая строка от модели — «не указано»: qwen пишет `"deadline": ""` вместо null."""
+    """Пустая строка от модели - «не указано»: qwen пишет `"deadline": ""` вместо null."""
 
     @model_validator(mode="before")
     @classmethod

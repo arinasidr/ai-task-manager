@@ -1,12 +1,4 @@
-"""Сравнительные таблицы по результатам прогонов (benchmarks/results/*/summary.json).
-
-Качество и скорость выводятся отдельно: скорость зависит от компьютера, поэтому её сравнивают
-только внутри одной машины, а качество — между всеми прогонами на одинаковых промпте и тестах.
-
-  python -m benchmarks.compare                 # последний прогон каждой модели
-  python -m benchmarks.compare --all           # все прогоны
-  python -m benchmarks.compare --output benchmarks/results/comparison.md
-"""
+"""Сравнительные таблицы по результатам прогонов (benchmarks/results/*/summary.json)."""
 
 import argparse
 import json

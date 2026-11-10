@@ -1,17 +1,4 @@
-"""Агент-валидатор: независимая проверка плана до того, как он изменит данные.
-
-Проверка в два слоя:
-1. **Код** — формальные правила, которые нельзя доверять LLM: план не выходит за рамки
-   намерения, касается только существующих и названных пользователем задач, не создаёт циклов,
-   опасные операции идут через подтверждение, порядок выполнения соблюдает зависимости. Если код
-   нашёл нарушение, модель не вызывается.
-2. **LLM другого семейства** (по умолчанию `ministral-3:3b`, Mistral, а аналитик и планировщик —
-   Gemma) — смысл: делает ли план то, что просил пользователь, не выдуманы ли данные, правильно ли
-   посчитаны сроки, правдиво ли сообщение пользователю.
-
-Если модель не ответила, план, который меняет данные, отклоняется: лучше переспросить, чем
-записать непроверенное (fail-closed). Планы только на чтение принимаются по результатам кода.
-"""
+"""Агент-валидатор: независимая проверка плана до того, как он изменит данные."""
 
 import json
 import re
@@ -141,9 +128,6 @@ def load_system_prompt() -> str:
     return build_prompt(PROMPT_PATH.read_text(encoding="utf-8"), [SKILL])
 
 
-# ---------------------------------------------------------------- вердикт
-
-
 class Issue(BaseModel):
     code: IssueCode
     detail: str
@@ -152,8 +136,8 @@ class Issue(BaseModel):
 class Verdict(BaseModel):
     decision: Literal["accept", "reject"]
     issues: list[Issue] = Field(default_factory=list)
-    # code — решение принял код (нарушение правил или нечего проверять моделью);
-    # llm — код не нашёл нарушений, решение модели; unavailable — модель не ответила.
+    # code - решение принял код (нарушение правил или нечего проверять моделью);
+    # llm - код не нашёл нарушений, решение модели; unavailable - модель не ответила.
     source: Literal["code", "llm", "unavailable"] = "code"
     model: str | None = None
     notes: list[str] = Field(default_factory=list)
@@ -181,7 +165,7 @@ _WEEKDAYS = ("понедельник", "вторник", "среда", "четв
 
 
 def calendar_hint(now: datetime, days: int = 8) -> list[str]:
-    """«сегодня: 2026-10-26, понедельник», «завтра: …» и следующие дни — для сверки сроков."""
+    """«сегодня: 2026-10-26, понедельник», «завтра: …» и следующие дни - для сверки сроков."""
     names = {0: "сегодня", 1: "завтра", 2: "послезавтра"}
     lines = []
     for offset in range(days):
@@ -194,7 +178,7 @@ def calendar_hint(now: datetime, days: int = 8) -> list[str]:
 _DUE_FIELDS = ("due_date", "due_time", "due_timezone", "due_at_utc")
 
 # Замечание модели «про дату»: день недели, месяц, срок, дата в любом виде. Если даты уже
-# проверил код, такие замечания — ошибка счёта модели, какой бы код она ни поставила.
+# проверил код, такие замечания - ошибка счёта модели, какой бы код она ни поставила.
 _DATE_TALK = re.compile(
     r"\b(?:срок\w*|дат[аеуы]\b|понедельник\w*|вторник\w*|сред[аеуы]\b|четверг\w*|пятниц\w*"
     r"|суббот\w*|воскресень\w*|январ\w*|феврал\w*|марта?\b|апрел\w*|ма[йя]\b|июн[яь]\b"
@@ -219,11 +203,7 @@ def _plan_dates(plan: Plan) -> list[date]:
 def check_relative_dates(
     request: str, plan: Plan, now: datetime
 ) -> tuple[list[tuple[str, str]], list[str]]:
-    """Сверяет сроки плана с «сегодня/завтра/через N дней/в пятницу» из запроса.
-
-    Возвращает (нарушения, подтверждения). Если в запросе таких слов нет или в плане нет сроков,
-    оба списка пустые — даты проверяет модель.
-    """
+    """Сверяет сроки плана с «сегодня/завтра/через N дней/в пятницу» из запроса."""
     mentioned = mentioned_dates(request, now)
     planned = _plan_dates(plan)
     if not mentioned or not planned:
@@ -275,9 +255,6 @@ def plan_view(plan: Plan) -> dict[str, Any]:
     if plan.warnings:
         view["warnings"] = plan.warnings
     return view
-
-
-# ---------------------------------------------------------------- валидатор
 
 
 class Validator:
@@ -345,8 +322,6 @@ class Validator:
         return self._unavailable(
             plan, "Модель не дала корректный ответ (" + "; ".join(errors) + ")"
         )
-
-    # ---------------------------------------------------------- слой 1: код
 
     def hard_checks(
         self, plan: Plan, analysis: Analysis | None, connection: sqlite3.Connection
@@ -458,11 +433,7 @@ class Validator:
         return list(dict.fromkeys(issues))
 
     def _check_deadlines(self, plan: Plan, analysis: Analysis) -> list[tuple[str, str]]:
-        """Срок в плане должен совпадать со сроком из разбора аналитика.
-
-        Правильно ли аналитик понял «завтра» относительно запроса, проверяет модель; код
-        проверяет, что по дороге к плану срок не изменился.
-        """
+        """Срок в плане должен совпадать со сроком из разбора аналитика."""
         expected: list[tuple[str, str | None]] = []
         actual: list[dict[str, Any]] = []
         if plan.intent == "create_task":
@@ -516,18 +487,9 @@ class Validator:
                     )
         return issues
 
-    # ---------------------------------------------------------- слой 2: LLM
-
     @staticmethod
     def _needs_llm(plan: Plan) -> str | None:
-        """Нужна ли модель: None — нужна, иначе причина, почему хватает кода.
-
-        Модель проверяет только действия, которые выполнятся сразу и без участия человека.
-        Остальное уже проверено надёжнее: опасные действия пользователь подтверждает по
-        предварительному плану, построенному кодом; планы без изменений данных (показать
-        задачи, порядок выполнения) проверяет код. Живой прогон показал, что на таких планах
-        модель на 3B даёт ложные отказы (P10).
-        """
+        """Нужна ли модель: None - нужна, иначе причина, почему хватает кода."""
         if plan.needs_clarification:
             return "План просит уточнение и ничего не меняет"
         if not plan.writes:
@@ -591,10 +553,10 @@ class Validator:
         issues = [Issue.model_validate(item) for item in raw.get("issues") or []]
         notes: list[str] = []
         if decision == "reject" and not issues:
-            # Отказ без причины нельзя передать планировщику — считаем ответ некорректным.
+            # Отказ без причины нельзя передать планировщику - считаем ответ некорректным.
             raise ValueError("отказ без указания проблем")
         if dates_verified:
-            # Даты уже точно проверил код; замечания модели о сроках — её ошибка счёта.
+            # Даты уже точно проверил код; замечания модели о сроках - её ошибка счёта.
             overruled = [
                 i for i in issues if i.code == "wrong_deadline" or _DATE_TALK.search(i.detail)
             ]
@@ -632,19 +594,12 @@ class Validator:
         )
 
 
-# ---------------------------------------------------------------- узел графа
-
-
 def make_validator_node(
     *,
     llm_for: Callable[[str], JsonLLM | None],
     connect: Callable[[], sqlite3.Connection],
 ) -> Callable[[dict[str, Any]], dict[str, Any]]:
-    """Узел LangGraph: читает request, analysis и plan из State, пишет verdict.
-
-    `llm_for(model)` возвращает клиента нужной модели (её выбрал роутер, `validator_model`),
-    `connect()` открывает БД только для чтения задач.
-    """
+    """Узел LangGraph: читает request, analysis и plan из State, пишет verdict."""
 
     def validator_node(state: dict[str, Any]) -> dict[str, Any]:
         model = state["validator_model"]

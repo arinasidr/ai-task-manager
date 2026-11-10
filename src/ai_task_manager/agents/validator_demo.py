@@ -1,11 +1,4 @@
-"""Ручная проверка валидатора на настоящей модели из Ollama.
-
-    python -m ai_task_manager.agents.validator_demo                    # ATM_VALIDATOR_MODEL
-    python -m ai_task_manager.agents.validator_demo --model phi4-mini:3.8b-q4_K_M
-
-Создаёт временную БД, строит планы настоящим планировщиком и подкладывает в часть из них ошибки.
-Для каждого сценария печатает, что ожидалось и что решил валидатор.
-"""
+"""Ручная проверка валидатора на настоящей модели из Ollama."""
 
 import argparse
 import tempfile
@@ -56,18 +49,18 @@ def main(argv: list[str] | None = None) -> int:
             ask_move = f"Перенеси задачу #{report} на завтра"
             move = {"intent": "update_task", "task_id": report, "updates": {"deadline": tomorrow}}
 
-            # план подменён по дороге: в разборе завтра, в плане послезавтра — ловит код
+            # план подменён по дороге: в разборе завтра, в плане послезавтра - ловит код
             tampered = plan_for(move)
             tampered["operations"][0]["args"]["updates"]["due_date"] = day_after
 
-            # аналитик сам ошибся с «завтра», план повторяет его ошибку — код считает «завтра» сам
+            # аналитик сам ошибся с «завтра», план повторяет его ошибку - код считает «завтра» сам
             misread = {
                 "intent": "update_task",
                 "task_id": report,
                 "updates": {"deadline": day_after},
             }
 
-            # «пятницу» код не распознаёт — дату проверяет модель по календарю
+            # «пятницу» код не распознаёт - дату проверяет модель по календарю
             friday = now.date() + timedelta(days=(4 - now.weekday()) % 7 or 7)
             ask_friday = f"Перенеси задачу #{report} на пятницу"
             on_friday = {

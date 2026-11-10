@@ -1,10 +1,4 @@
-"""Узлы графа с настоящими агентами: аналитик, планировщик, итоговый ответ.
-
-Узел — функция State → обновление State. Модель для каждого агента выбрал роутер (A10) и
-записал в State (`analyst_model`, `planner_model`, `validator_model`); узел получает клиента
-этой модели через `llm_for(model)`. Валидатор и узел действия — в `agents/validator.py` и
-`tools/confirmation.py`.
-"""
+"""Узлы графа с настоящими агентами: аналитик, планировщик, итоговый ответ."""
 
 import sqlite3
 from collections.abc import Callable
@@ -86,12 +80,7 @@ def make_analyst_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
 
 
 def _split_mixed_request(analysis: dict[str, Any]) -> dict[str, Any]:
-    """«Добавь задачу X, мне удобнее вечером»: главное — задача, предпочтение — догадка (P12).
-
-    Маленькая модель на таком запросе иногда выбирает `update_preference` и теряет задачу,
-    а предпочтение сохраняет без вопроса. Если аналитик выделил задачи, код считает запрос
-    созданием задачи, а предпочтение передаёт как подсказку: его предложат подтвердить.
-    """
+    """«Добавь задачу X, мне удобнее вечером»: главное - задача, предпочтение - догадка."""
     if analysis.get("intent") != "update_preference" or not analysis.get("tasks"):
         return analysis
     analysis = dict(analysis)
@@ -120,7 +109,7 @@ def make_planner_node(*, llm_for: LLMFor, connect: Connect) -> Callable[[dict], 
             counts["planner"] = counts.get("planner", 0) + planner.llm_retries
             update["model_retry_counts"] = counts
         if planner.repaired_dependencies is not None or planner.deadline_fixes:
-            # аналитик ошибся в связи или в дне, код исправил по тексту запроса — дальше по графу
+            # аналитик ошибся в связи или в дне, код исправил по тексту запроса - дальше по графу
             # (валидатор, история) идёт исправленный разбор
             analysis = dict(state["analysis"])
             if planner.repaired_dependencies is not None:

@@ -1,9 +1,9 @@
-﻿# Проверка изоляции AI Task Manager в Docker Sandboxes (P13).
+﻿# Проверка изоляции AI Task Manager в Docker Sandboxes.
 #
 #   powershell -ExecutionPolicy Bypass -File deploy\sandbox\check.ps1
 #
-# 1) изнутри песочницы — deploy/sandbox/check_isolation.py от пользователя atm;
-# 2) с хоста — API отвечает на проброшенном порту;
+# 1) изнутри песочницы - deploy/sandbox/check_isolation.py от пользователя atm;
+# 2) с хоста - API отвечает на проброшенном порту;
 # 3) политика сети и журнал заблокированных запросов.
 # Для полной проверки API должен быть запущен (start.ps1 в другом окне).
 

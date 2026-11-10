@@ -1,10 +1,4 @@
-"""Контракты между агентами: что аналитик передаёт планировщику и что планировщик отдаёт дальше.
-
-`Analysis` — вход планировщика. Принимает и результат аналитика (`AnalystResult` из
-`agents/analyst/schema.py`), и формат ответа из бенчмарка (`benchmarks/schema.py`): различия
-(пустые поля в `updates`, `preference`, `clarification_question`) выравниваются при разборе.
-`Plan` — выход планировщика: его проверяют валидатор и код, а исполняют Tools.
-"""
+"""Контракты между агентами: что аналитик передаёт планировщику и что планировщик отдаёт дальше."""
 
 from typing import Any, Literal
 
@@ -95,20 +89,13 @@ class Analysis(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     message: str | None = None
     # Предпочтение, которое аналитик заметил при другом намерении («добавь задачу…, мне удобнее
-    # вечером»). Это только догадка: её предлагают подтвердить (P12), в план она не идёт.
+    # вечером»). Это только догадка: её предлагают подтвердить, в план она не идёт.
     preference_hint: dict[str, Any] | None = None
 
     @model_validator(mode="before")
     @classmethod
     def _accept_analyst_result(cls, data: Any) -> Any:
-        """Приводит результат аналитика к единому виду.
-
-        - `AnalystResult` (Pydantic-модель) превращается в словарь;
-        - из `updates` убираются незаполненные поля: у аналитика `None` значит «не менять»;
-        - `preference = {kind, value}` при `update_preference` переносится в `updates` (как в
-          бенчмарке), при другом намерении — в `preference_hint`;
-        - `clarification_question` становится `message`.
-        """
+        """Приводит результат аналитика к единому виду."""
         if isinstance(data, BaseModel):
             data = data.model_dump()
         if not isinstance(data, dict):
@@ -133,11 +120,7 @@ class Analysis(BaseModel):
 
 
 class Operation(BaseModel):
-    """Один вызов Tool. Новые задачи ещё не имеют ID, поэтому на них ссылаются через `ref`.
-
-    Пример: `create_task` с `ref="new1"`, затем `add_dependency` с
-    `args={"predecessor_task_id": "$new1", "successor_task_id": "$new2"}`.
-    """
+    """Один вызов Tool. Новые задачи ещё не имеют ID, поэтому на них ссылаются через `ref`."""
 
     tool: ToolName
     args: dict[str, Any] = Field(default_factory=dict)
@@ -161,7 +144,7 @@ class Plan(BaseModel):
     message_to_user: str = ""
     # Пояснения для валидатора и трейсов: почему план такой и что поправил код.
     reasoning: list[str] = Field(default_factory=list)
-    # rules — план построен кодом; llm — моделью; fallback — модель не справилась, план по правилам.
+    # rules - план построен кодом; llm - моделью; fallback - модель не справилась, план по правилам.
     source: Literal["rules", "llm", "fallback"] = "rules"
 
     @property

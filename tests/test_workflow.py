@@ -1,4 +1,4 @@
-"""Сквозные тесты workflow: настоящие агенты, граф и БД; модели — поддельные, по ролям."""
+"""Сквозные тесты workflow: настоящие агенты, граф и БД; модели - поддельные, по ролям."""
 
 import json
 import sqlite3
@@ -123,9 +123,6 @@ def add(db: sqlite3.Connection, title: str, **fields: Any) -> int:
     return task_id
 
 
-# ---------------------------------------------------------------- действия
-
-
 def test_create_task_end_to_end(chat, models: Models, db: sqlite3.Connection) -> None:
     models.answer(
         "analyst",
@@ -140,7 +137,7 @@ def test_create_task_end_to_end(chat, models: Models, db: sqlite3.Connection) ->
     assert [(t["title"], t["due_date"]) for t in list_tasks(db)] == [
         ("Купить молоко", "2026-10-15")
     ]
-    # аналитик и планировщик — Gemma, валидатор — Mistral; планировщик по правилам, без модели
+    # аналитик и планировщик - Gemma, валидатор - Mistral; планировщик по правилам, без модели
     assert models.roles() == ["analyst", "validator"]
     assert result.models == {
         "analyst": "gemma4:e2b",
@@ -221,9 +218,6 @@ def test_rules_plan_rejected_by_validator_is_not_retried(
     assert "Пользователь не просил менять приоритет" in result.reply
     assert "Данные не изменены" in result.reply
     assert get_task(db, task)["priority"] is None
-
-
-# ---------------------------------------------------------------- планирование и повторы
 
 
 def order_answer(ids: list[int]) -> dict[str, Any]:
@@ -352,9 +346,6 @@ def test_preferences_reach_planner(chat, models: Models, db: sqlite3.Connection)
     assert planner_call["user"]["preferences"] == {"preferred_work_time": "evening"}
 
 
-# ---------------------------------------------------------------- без плана
-
-
 def test_simple_read_uses_fast_model(chat, models: Models, db: sqlite3.Connection) -> None:
     add(db, "Отчёт")
     models.answer("analyst", {"intent": "get_tasks"})
@@ -436,7 +427,7 @@ def test_unknown_task_id_from_analyst(chat, models: Models, db: sqlite3.Connecti
 
 
 def test_id_invented_by_model_asks_for_number(chat, models: Models, db: sqlite3.Connection) -> None:
-    # живой прогон: «Удали отчёт» после удаления #1 — модель взяла #1 из прошлых реплик
+    # живой прогон: «Удали отчёт» после удаления #1 - модель взяла #1 из прошлых реплик
     add(db, "Отчёт")
     models.answer("analyst", {"intent": "delete_task", "task_id": 99})
     result = chat("Удали отчёт")
@@ -468,7 +459,7 @@ def test_model_unavailable(chat, models: Models) -> None:
 def test_dialogue_memory_through_checkpointer(
     settings: Settings, db_path: Path, models: Models, tmp_path: Path
 ) -> None:
-    """Workflow + память A11: один conversation_id, история включает итоговые ответы."""
+    """Workflow и память диалога: один conversation_id, история включает итоговые ответы."""
     models.answer(
         "analyst",
         {"intent": "create_task", "tasks": [{"title": "Купить молоко"}]},
@@ -518,10 +509,7 @@ def test_dialogue_memory_through_checkpointer(
 def test_repaired_dependency_reaches_validator(
     chat, models: Models, db: sqlite3.Connection
 ) -> None:
-    """Живой прогон: аналитик связал задачу саму с собой, код восстановил порядок по запросу.
-
-    Валидатор должен видеть исправленную связь, иначе он отклоняет верный план.
-    """
+    """Живой прогон: аналитик связал задачу саму с собой, код восстановил порядок по запросу."""
     titles = ["Собрать данные для отчёта", "Написать отчёт по практике"]
     models.answer(
         "analyst",
@@ -569,9 +557,6 @@ def test_wrong_weekday_is_fixed_before_validator(
     assert models.calls[-1]["user"]["analysis"]["tasks"][0]["deadline"] == "2026-10-18"
     assert result.reply.startswith("Готово")
     assert list_tasks(db)[0]["due_date"] == "2026-10-18"
-
-
-# ---------------------------------------------------------------- долгосрочная память (P12)
 
 
 @pytest.fixture
@@ -669,7 +654,7 @@ def test_new_request_instead_of_answer_keeps_proposal_pending(
 
     assert "«Созвон с командой»" in result.reply
     assert statuses(db) == [("preferred_work_time", "proposed")]
-    # вопрос больше не висит: «да» теперь — обычный запрос к аналитику
+    # вопрос больше не висит: «да» теперь - обычный запрос к аналитику
     models.answer("analyst", {"intent": "unsupported"})
     dialogue("да")
     assert models.calls[-1]["role"] == "analyst"
@@ -746,7 +731,7 @@ def test_mixed_request_keeps_task_and_asks_about_preference(
     result = chat("Добавь задачу созвон с командой, мне вообще удобнее работать вечером")
 
     assert [task["title"] for task in list_tasks(db)] == ["Созвон с командой"]
-    assert get_preferences(db) == {}  # без «запомни» — только предложение
+    assert get_preferences(db) == {}  # без «запомни» - только предложение
     assert result.preference_id is not None
 
 
@@ -763,9 +748,6 @@ def test_proposed_preference_does_not_reach_planner(
 
     assert models.calls[-1]["user"]["preferences"] == {}
     assert "Учтены" not in result.reply
-
-
-# ---------------------------------------------------------------- траектория (P14)
 
 
 def test_trajectory_is_recorded_and_saved(
@@ -805,9 +787,6 @@ def test_trajectory_is_recorded_and_saved(
     assert saved["request"] == "Добавь задачу купить молоко"
     assert [step["node"] for step in saved["steps"]] == nodes
     assert saved["duration_ms"] == result.duration_ms
-
-
-# ---------------------------------------------------------------- HTTP API
 
 
 @pytest.fixture
@@ -889,9 +868,6 @@ def test_chat_request_id_does_not_rerun_uncertain_request(
     assert response.status_code == 409
     assert "ещё выполняется" in response.json()["detail"]
     assert models.calls == []
-
-
-# ---------------------------------------------------------------- скиллы
 
 
 @pytest.mark.parametrize("name", ["task-planning", "task-validation"])

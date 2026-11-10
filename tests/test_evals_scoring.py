@@ -1,4 +1,4 @@
-"""Проверки оценщика A16 без моделей и сети."""
+"""Проверки оценщика Evals без моделей и сети."""
 
 from evals.scoring import score_analysis, score_db, score_plan
 

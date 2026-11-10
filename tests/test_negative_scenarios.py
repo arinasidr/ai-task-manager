@@ -1,4 +1,4 @@
-"""A17: негативные сценарии через рабочий граф и временную SQLite-базу."""
+"""Негативные сценарии через рабочий граф и временную SQLite-базу."""
 
 from collections import defaultdict
 from collections.abc import Iterator

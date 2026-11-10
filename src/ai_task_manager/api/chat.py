@@ -17,7 +17,7 @@ from ai_task_manager.workflow.service import create_workflow, run_chat
 router = APIRouter(prefix="/api/v1", tags=["chat"])
 
 
-# Чекпоинтер (память диалога, A11) держит своё соединение с SQLite, пока работает приложение.
+# Чекпоинтер (память диалога) держит своё соединение с SQLite, пока работает приложение.
 _resources = ExitStack()
 
 
@@ -44,11 +44,7 @@ def chat(
     db: Db,
     request: Request,
 ) -> ChatResponse:
-    """Сообщение пользователя проходит аналитика, планировщика и валидатора.
-
-    Безопасные действия выполняются сразу. Опасные возвращают `action_id`: подтвердить —
-    `POST /api/v1/actions/{action_id}/confirm`, отменить — `/cancel`.
-    """
+    """Сообщение пользователя проходит аналитика, планировщика и валидатора."""
     if payload.request_id is not None:
         try:
             saved = claim_request(db, payload.request_id, payload.message, payload.conversation_id)
@@ -72,7 +68,7 @@ def chat(
 
         for _ in range(max(0, result.validation_attempts - 1)):
             metrics.record_retry("validator")
-    except ConnectionError as exc:  # pragma: no cover — защита на случай сбоя вне агентов
+    except ConnectionError as exc:  # pragma: no cover - защита на случай сбоя вне агентов
         raise HTTPException(status_code=503, detail=f"Модели недоступны: {exc}") from exc
     response = ChatResponse(
         conversation_id=result.conversation_id,

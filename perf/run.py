@@ -1,21 +1,4 @@
-"""Evals производительности AI Task Manager (P16).
-
-    python -m perf.run                       # настоящие модели (нужна Ollama), 3 повтора
-    python -m perf.run --compare-routing     # роутинг против «всё на одну модель»
-    python -m perf.run --mode mock --check   # без моделей: CI, проверка стабильности
-
-Что меряется на одном и том же диалоге (`TURNS`), каждый повтор — с чистой БД:
-- **задержки:** ход целиком и каждый узел графа (траектория P14), p50 / p95 / максимум;
-- **скорость LLM:** для каждой модели — число вызовов, время, токены/с генерации и чтения
-  промпта, время загрузки модели (переключение моделей в Ollama);
-- **ресурсы:** CPU и память системы, память процесса приложения и процессов Ollama,
-  память моделей в видеокарте (`/api/ps`);
-- **ошибки и стабильность:** исход каждого хода против ожидаемого, ошибки агентов, повторы,
-  запасные планы, совпадение исходов между повторами.
-
-Результат — `perf/results/<время>-<режим>.json` и сводка в Markdown рядом. Если в `.env` задан
-`ATM_PHOENIX_ENDPOINT`, каждый ход прогона попадает в Phoenix в проект `perf-<режим>-<роутинг>`.
-"""
+"""Evals производительности AI Task Manager."""
 
 import argparse
 import json
@@ -41,8 +24,8 @@ from ai_task_manager.workflow.service import ChatResult, create_workflow, run_ch
 
 RESULTS_DIR = Path(__file__).parent / "results"
 
-# Диалог одного повтора: сообщение и ожидаемый исход. Три запроса чтения — на них работает
-# роутинг (быстрая модель), остальное — полный разбор.
+# Диалог одного повтора: сообщение и ожидаемый исход. Три запроса чтения - на них работает
+# роутинг (быстрая модель), остальное - полный разбор.
 TURNS: list[tuple[str, str]] = [
     ("Добавь задачу подготовить презентацию к пятнице", "created"),
     ("Добавь срочную задачу исправить баг в авторизации на завтра", "created"),
@@ -58,9 +41,6 @@ TURNS: list[tuple[str, str]] = [
 
 # Пороги для --check (режим mock, CI): обработка без моделей должна быть быстрой и без ошибок.
 CHECK_MAX_P95_MS = 1500.0
-
-
-# ---------------------------------------------------------------- модели
 
 
 class Recorder:
@@ -159,9 +139,6 @@ def _no_decision(_: dict) -> dict:
     return {"decision": None, "decision_error": None}
 
 
-# ---------------------------------------------------------------- ресурсы
-
-
 class ResourceSampler(threading.Thread):
     """Каждые 0,5 с: CPU и память системы, память приложения и Ollama."""
 
@@ -177,7 +154,7 @@ class ResourceSampler(threading.Thread):
         else:
             self.psutil = psutil
             self.me = psutil.Process()
-            psutil.cpu_percent()  # первый вызов всегда 0 — «прогреваем»
+            psutil.cpu_percent()  # первый вызов всегда 0 - «прогреваем»
 
     def _ollama_rss(self) -> float:
         total = 0
@@ -214,11 +191,11 @@ class ResourceSampler(threading.Thread):
 
 
 def loaded_models(base_url: str) -> list[dict[str, Any]]:
-    """Модели в памяти Ollama сейчас: сколько занимают и сколько из этого — видеокарта."""
+    """Модели в памяти Ollama сейчас: сколько занимают и сколько из этого - видеокарта."""
     try:
         with urllib.request.urlopen(f"{base_url.rstrip('/')}/api/ps", timeout=5) as response:
             models = json.load(response).get("models") or []
-    except Exception:  # noqa: BLE001 — Ollama не запущена или старая версия
+    except Exception:  # noqa: BLE001 - Ollama не запущена или старая версия
         return []
     return [
         {
@@ -228,9 +205,6 @@ def loaded_models(base_url: str) -> list[dict[str, Any]]:
         }
         for m in models
     ]
-
-
-# ---------------------------------------------------------------- прогон
 
 
 def outcome(result: ChatResult) -> str:
@@ -282,7 +256,7 @@ def run_config(
                     started = time.perf_counter()
                     try:
                         result = run_chat(graph, run_settings, message, conversation_id)
-                    except Exception as exc:  # noqa: BLE001 — сбой графа тоже результат
+                    except Exception as exc:  # noqa: BLE001 - сбой графа тоже результат
                         turns.append(
                             {
                                 "config": label,
@@ -327,11 +301,8 @@ def run_config(
     return turns
 
 
-# ---------------------------------------------------------------- сводка
-
-
 def percentile(values: list[float], q: float) -> float:
-    """Метод ближайшего ранга — как в Evals A16."""
+    """Метод ближайшего ранга, как в Evals."""
     ordered = sorted(values)
     rank = max(1, -(-int(q * len(ordered) * 100) // 100))
     return ordered[min(rank, len(ordered)) - 1]
@@ -580,11 +551,8 @@ def markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------- запуск
-
-
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Evals производительности (P16)")
+    parser = argparse.ArgumentParser(description="Evals производительности")
     parser.add_argument("--mode", choices=["live", "mock"], default="live")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument(
@@ -665,7 +633,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n=== {label}: {args.repeats} × {len(TURNS)} ходов ({args.mode})", flush=True)
         sampler = ResourceSampler()
         sampler.start()
-        # mock: Tev1 тоже подменяем — в CI нет ни Ollama, ни сети
+        # mock: Tev1 тоже подменяем - в CI нет ни Ollama, ни сети
         decision = None if args.mode == "live" else _no_decision
         turns = run_config(settings, llm_for, recorder, args.repeats, label, decision)
         report["resources"][label] = sampler.stop()

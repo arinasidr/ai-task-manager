@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Установка AI Task Manager ВНУТРИ песочницы Docker Sandboxes (P13). Запускает setup.ps1:
+# Установка AI Task Manager ВНУТРИ песочницы Docker Sandboxes. Запускает setup.ps1:
 #
 #   sbx exec -u root atm bash /tmp/atm-setup/inside_setup.sh
 #
 # Что делает:
 #   1. проверяет Python >= 3.11 и venv (при необходимости ставит python3-venv);
-#   2. создаёт пользователя приложения atm БЕЗ sudo — приложение не может менять систему;
+#   2. создаёт пользователя приложения atm БЕЗ sudo - приложение не может менять систему;
 #   3. распаковывает код в /opt/atm (владелец root, для atm только чтение);
 #   4. ставит зависимости в /opt/atm/.venv (сеть до PyPI открыта временно, setup.ps1 её закроет);
-#   5. создаёт /var/lib/atm — единственный каталог, куда приложение может писать (SQLite);
+#   5. создаёт /var/lib/atm - единственный каталог, куда приложение может писать (SQLite);
 #   6. пишет /opt/atm/.env: Ollama на хосте через host.docker.internal, API на 0.0.0.0;
 #   7. прогоняет тесты от имени atm.
 set -euo pipefail
@@ -33,7 +33,7 @@ python3 -c 'import sys; assert sys.version_info >= (3, 11), sys.version' \
 python3 --version
 if ! python3 -m venv /tmp/atm-venv-check >/dev/null 2>&1; then
   echo "venv недоступен — ставлю python3-venv (нужен временный доступ к archive.ubuntu.com)"
-  # В шаблоне подключены репозитории GitHub CLI и Docker — они закрыты политикой сети (403),
+  # В шаблоне подключены репозитории GitHub CLI и Docker - они закрыты политикой сети (403),
   # и apt-get update завершается с ошибкой, хотя списки Ubuntu скачались. Это не мешает.
   apt-get update -qq || echo "(часть репозиториев недоступна — нужен только Ubuntu, продолжаю)"
   DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv
@@ -69,13 +69,13 @@ chmod 700 "$DATA_DIR"
 
 step "6. Настройки"
 cat > "$APP_DIR/.env" <<'EOF'
-# Настройки внутри песочницы (P13). Остальные значения — по умолчанию из config.py.
+# Настройки внутри песочницы. Остальные значения - по умолчанию из config.py.
 ATM_API_HOST=0.0.0.0
 ATM_DATABASE_PATH=/var/lib/atm/tasks.db
 # 127.0.0.1 хоста из песочницы недоступен; прокси переводит этот адрес в localhost хоста,
 # а политика сети пропускает только порт Ollama.
 ATM_OLLAMA_BASE_URL=http://host.docker.internal:11434
-# Наблюдаемость (P14): логи и траектории — рядом с данными; трейсы — в Phoenix на хосте
+# Наблюдаемость: логи и траектории - рядом с данными; трейсы - в Phoenix на хосте
 ATM_LOG_DIR=/var/lib/atm/logs
 ATM_PHOENIX_ENDPOINT=http://host.docker.internal:6006/v1/traces
 EOF

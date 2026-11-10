@@ -1,15 +1,4 @@
-"""Исполнитель плана: вызывает Tools (функции `db/`) по операциям плана.
-
-- Все операции плана выполняются в одной транзакции: либо весь план, либо ничего.
-- Опасность операции определяет **код**, а не флаг в плане: удаление и завершение задачи с
-  незавершёнными зависимостями без подтверждения не выполняются, даже если план утверждает,
-  что подтверждение не нужно.
-- Новые задачи из плана получают ID при создании; ссылки `$new1` в следующих операциях
-  заменяются на эти ID.
-
-Исполнитель не делает commit сам: транзакцией управляет вызывающий код (`run_plan`,
-`confirmation.confirm_plan_action`).
-"""
+"""Исполнитель плана: вызывает Tools (функции `db/`) по операциям плана."""
 
 import sqlite3
 from datetime import UTC, datetime
@@ -75,11 +64,8 @@ class ExecutionResult(BaseModel):
 _STATUS_NAMES = {"todo": "к выполнению", "in_progress": "в работе", "done": "выполнена"}
 
 
-# ---------------------------------------------------------------- опасные операции
-
-
 def confirmation_reasons(connection: sqlite3.Connection, plan: Plan) -> list[str]:
-    """Почему план требует подтверждения — по фактическим данным БД, а не по флагу плана."""
+    """Почему план требует подтверждения - по фактическим данным БД, а не по флагу плана."""
     reasons: list[str] = []
     for op in plan.operations:
         task_id = op.args.get("task_id")
@@ -96,9 +82,6 @@ def confirmation_reasons(connection: sqlite3.Connection, plan: Plan) -> list[str
     return reasons
 
 
-# ---------------------------------------------------------------- выполнение
-
-
 def _resolve(value: Any, refs: dict[str, int]) -> int:
     if isinstance(value, str) and value.startswith("$"):
         if value[1:] not in refs:
@@ -110,7 +93,7 @@ def _resolve(value: Any, refs: dict[str, int]) -> int:
 
 
 def _force_complete(connection: sqlite3.Connection, task_id: int) -> bool:
-    """Завершение вопреки незавершённым зависимостям — только после подтверждения."""
+    """Завершение вопреки незавершённым зависимостям - только после подтверждения."""
     cursor = connection.execute(
         """
         UPDATE tasks SET status = 'done', updated_at = ?, version = version + 1
@@ -124,7 +107,7 @@ def _force_complete(connection: sqlite3.Connection, task_id: int) -> bool:
 def execute_plan(
     connection: sqlite3.Connection, plan: Plan, *, confirmed: bool = False
 ) -> ExecutionResult:
-    """Выполняет операции плана без commit. При ошибке исключение — откатывает вызывающий."""
+    """Выполняет операции плана без commit. При ошибке исключение - откатывает вызывающий."""
     if plan.needs_clarification:
         raise ValueError("План ждёт уточнения от пользователя, выполнять нечего")
     reasons = confirmation_reasons(connection, plan)
@@ -141,7 +124,7 @@ def execute_plan(
     result = ExecutionResult()
     refs: dict[str, int] = {}
     for op in plan.operations:
-        # P14: каждый вызов Tool — спан в Phoenix и JSON-строка в atm.log
+        # каждый вызов Tool - спан в Phoenix и JSON-строка в atm.log
         with tool_call(op.tool, op.args) as out:
             out["result"] = _run_operation(connection, op, refs, result)
     return result
@@ -218,7 +201,7 @@ def _run_operation(
             result.preferences.append(f"{_PREFERENCE_NAMES.get(kind, kind)} — {shown}")
         return {"saved": list(args)}
 
-    # pragma: no cover — ToolName в контракте не даст сюда попасть
+    # pragma: no cover - ToolName в контракте не даст сюда попасть
     raise ValueError(f"Неизвестная операция {op.tool}")
 
 

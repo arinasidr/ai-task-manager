@@ -1,18 +1,4 @@
-"""Общий бенчмарк LLM на эталонных запросах.
-
-Модель получает системный промпт и JSON с `context` и `input` тест-кейса (без `expected`),
-возвращает структурированный JSON, который сравнивается с эталоном. Для каждой модели
-создаётся папка benchmarks/results/<время>_<модель>/ с файлами:
-  meta.json        — модель, движок, настройки, хэши промпта и тестов, сведения о машине;
-  responses.jsonl  — ответ, проверки, ошибки, задержка и скорость по каждому кейсу;
-  summary.json     — сводные метрики.
-
-Примеры:
-  python -m benchmarks.run --model qwen3:4b --machine ASUS
-  python -m benchmarks.run --model qwen3:4b --model gemma3:4b --repeats 3
-  python -m benchmarks.run --model qwen3:4b --only TEST_05,TEST_29
-  python -m benchmarks.run --backend openai --base-url http://localhost:8080/v1 --model local
-"""
+"""Общий бенчмарк LLM на эталонных запросах."""
 
 import argparse
 import hashlib
@@ -46,9 +32,6 @@ DEFAULT_PROMPT = BENCH_DIR / "prompts" / "system.md"
 DEFAULT_RESULTS = BENCH_DIR / "results"
 MAX_CONSECUTIVE_ERRORS = 3
 WARMUP_REQUEST = {"tasks": [], "request": "Покажи мои задачи."}
-
-
-# ---------------------------------------------------------------- входные данные
 
 
 def load_cases(path: Path) -> list[dict[str, Any]]:
@@ -147,9 +130,6 @@ def default_base_url(backend: str) -> str:
         return get_settings().ollama_base_url
     except ImportError:
         return os.environ.get("ATM_OLLAMA_BASE_URL", "http://localhost:11434")
-
-
-# ---------------------------------------------------------------- прогон
 
 
 def evaluate(case: dict[str, Any], text: str, repeat: int) -> dict[str, Any]:
@@ -391,9 +371,6 @@ def _print_summary(summary: dict[str, Any]) -> None:
     if summary["failed_cases"]:
         print(f"  не пройдены: {', '.join(summary['failed_cases'])}")
     print(f"  результаты: {summary['results_dir']}")
-
-
-# ---------------------------------------------------------------- CLI
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

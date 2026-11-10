@@ -1,18 +1,4 @@
-"""Проверка изоляции AI Task Manager внутри Docker Sandboxes (P13).
-
-Запускается ВНУТРИ песочницы от пользователя приложения:
-
-    sbx exec -u atm -w /opt/atm atm /opt/atm/.venv/bin/python deploy/sandbox/check_isolation.py
-
-Что проверяется (то же самое ограничено настройками в setup.ps1 и inside_setup.sh):
-- пользователь: не root и без sudo;
-- файлы: код приложения только для чтения, запись — только в каталог данных; папок хоста нет;
-- сеть: Ollama на хосте доступна, интернет и другие порты хоста — нет;
-- Docker: нет доступа к Docker Engine;
-- ресурсы: лимиты CPU и памяти действуют.
-
-Только стандартная библиотека Python. Код возврата 0 — все обязательные проверки пройдены.
-"""
+"""Проверка изоляции AI Task Manager внутри Docker Sandboxes."""
 
 import argparse
 import json
@@ -49,9 +35,6 @@ class Check:
     detail: str
 
 
-# ---------------------------------------------------------------- чистые функции (тестируются)
-
-
 def host_mounts(mounts_text: str) -> list[tuple[str, str, bool]]:
     """Монтирования папок хоста из /proc/mounts: (точка, тип ФС, только чтение)."""
     found = []
@@ -66,7 +49,7 @@ def host_mounts(mounts_text: str) -> list[tuple[str, str, bool]]:
 
 
 def classify_response(status: int | None, error: str | None) -> str:
-    """'open' — адрес доступен; 'blocked' — запрос не прошёл (ошибка или отказ прокси)."""
+    """'open' - адрес доступен; 'blocked' - запрос не прошёл (ошибка или отказ прокси)."""
     if status is None:
         return "blocked"
     if status in BLOCKED_STATUSES:
@@ -81,16 +64,13 @@ def mem_total_gib(meminfo_text: str) -> float | None:
     return None
 
 
-# ---------------------------------------------------------------- проверки
-
-
 def probe(url: str, timeout: float = 8.0) -> tuple[int | None, str | None, bytes]:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310
             return response.status, None, response.read(200_000)
     except urllib.error.HTTPError as exc:
         return exc.code, f"HTTP {exc.code}", b""
-    except Exception as exc:  # noqa: BLE001 — любая ошибка соединения = недоступно
+    except Exception as exc:  # noqa: BLE001 - любая ошибка соединения = недоступно
         return None, f"{type(exc).__name__}: {exc}"[:160], b""
 
 
@@ -178,7 +158,7 @@ def check_network(
     else:
         checks.append(Check("Ollama на хосте доступна", "fail", error or f"HTTP {status}"))
 
-    # Phoenix (P14): единственный, кроме Ollama, открытый адрес. Не запущен — предупреждение.
+    # Phoenix: единственный, кроме Ollama, открытый адрес. Не запущен - предупреждение.
     status, error, _ = probe("http://host.docker.internal:6006/", timeout=6)
     checks.append(
         Check(
@@ -265,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         nargs="*",
         default=[8080, 5432],
-        help="порты хоста, которые должны быть закрыты (6006 открыт для Phoenix, P14)",
+        help="порты хоста, которые должны быть закрыты (6006 открыт для Phoenix)",
     )
     parser.add_argument("--json", action="store_true", help="вывести результат в JSON")
     args = parser.parse_args(argv)

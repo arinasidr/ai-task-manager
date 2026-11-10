@@ -1,4 +1,4 @@
-﻿# Развёртывание AI Task Manager в Docker Sandboxes на Windows (P13).
+﻿# Развёртывание AI Task Manager в Docker Sandboxes на Windows.
 #
 #   powershell -ExecutionPolicy Bypass -File deploy\sandbox\setup.ps1            # первый раз
 #   powershell -ExecutionPolicy Bypass -File deploy\sandbox\setup.ps1 -Recreate  # пересоздать
@@ -47,10 +47,10 @@ if ($dirty) { Write-Warning "Есть незакоммиченные измен�
 Step "1. Сеть по умолчанию: всё запрещено"
 # Если домен подходит и под разрешение, и под запрет, побеждает запрет. Поэтому не запрещаем
 # лишнее точечно, а ставим «запрещено всё» и открываем песочнице только нужное.
-# Задаётся один раз; при повторном запуске sbx отвечает «already initialized» — это нормально.
+# Задаётся один раз; при повторном запуске sbx отвечает «already initialized» - это нормально.
 # Если когда-то был выбран другой режим (Balanced/Open): sbx policy reset и запустить заново.
 # В Windows PowerShell 5.1 перенаправление stderr при ErrorActionPreference=Stop прерывает
-# скрипт на первой строке ошибки, поэтому на время этой команды — Continue.
+# скрипт на первой строке ошибки, поэтому на время этой команды - Continue.
 $ErrorActionPreference = "Continue"
 $out = (& sbx policy set-default deny-all 2>&1 | Out-String)
 $ErrorActionPreference = "Stop"
@@ -75,7 +75,7 @@ Step "3. Разрешения сети только для этой песочн
 # Ollama на хосте: из песочницы адрес host.docker.internal, прокси переводит его в localhost.
 # Песочница в sbx policy задаётся флагом --sandbox (позиционное имя в новых версиях убрано).
 Invoke-Sbx policy allow network --sandbox $Name "localhost:11434"
-# Phoenix на хосте (P14): приложение отправляет трейсы по OTLP/HTTP на host.docker.internal:6006
+# Phoenix на хосте: приложение отправляет трейсы по OTLP/HTTP на host.docker.internal:6006
 Invoke-Sbx policy allow network --sandbox $Name "localhost:6006"
 foreach ($h in $TemporaryHosts) { Invoke-Sbx policy allow network --sandbox $Name $h }
 
@@ -104,7 +104,7 @@ finally {
 }
 
 Step "7. Итоговая политика сети"
-# sbx policy ls не фильтрует по песочнице: строка «sandbox:atm» — правила нашей песочницы
+# sbx policy ls не фильтрует по песочнице: строка «sandbox:atm» - правила нашей песочницы
 & sbx policy ls
 
 Write-Host "`nГотово. Дальше:" -ForegroundColor Green

@@ -20,7 +20,7 @@ dependencies = [
     "langgraph-checkpoint-sqlite>=3.1.2,<4",
     "langchain-core>=0.3",
     "langchain-ollama>=0.3",
-    # наблюдаемость (P14)
+    # наблюдаемость: трейсы в Phoenix
     "arize-phoenix-otel>=0.17",
     "openinference-instrumentation-langchain>=0.1.80",
 ]

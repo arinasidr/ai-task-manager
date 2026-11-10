@@ -78,9 +78,6 @@ def prepare(db: sqlite3.Connection, plan: Plan, request: str = "запрос") -
     return pending.action_id
 
 
-# ---------------------------------------------------------------- исполнитель
-
-
 def test_create_with_dependency_resolves_refs(db: sqlite3.Connection) -> None:
     plan = plan_for(
         db,
@@ -171,9 +168,6 @@ def test_clarification_plan_is_not_executed(db: sqlite3.Connection) -> None:
         execute_plan(db, plan)
 
 
-# ---------------------------------------------------------------- предварительный план
-
-
 def test_preview_names_tasks_and_detached_links(db: sqlite3.Connection) -> None:
     a, b = add(db, "Собрать данные"), add(db, "Написать отчёт")
     link(db, a, b)
@@ -199,9 +193,6 @@ def test_preview_for_blocked_completion_and_update(db: sqlite3.Connection) -> No
         f"Изменить #{b} «B»: приоритет → высокий, срок → 2026-11-05",
         f"Отметить #{b} «B» выполненной, хотя не завершены задачи #{a}",
     ]
-
-
-# ---------------------------------------------------------------- ожидающее действие
 
 
 def test_prepare_does_not_change_tasks(db: sqlite3.Connection) -> None:
@@ -281,7 +272,7 @@ def test_plan_rechecked_on_confirmation(db_path: Path, db: sqlite3.Connection) -
         ],
     )
     action_id = prepare(db, plan)
-    # пока ждали подтверждения, появилась обратная связь — теперь план создаст цикл;
+    # пока ждали подтверждения, появилась обратная связь - теперь план создаст цикл;
     # версии задач тоже изменились, поэтому подтверждение отклоняется
     link(db, b, a)
     with pytest.raises(ValueError):
@@ -310,9 +301,6 @@ def test_prepare_rejects_plans_without_existing_tasks(db: sqlite3.Connection) ->
     plan = plan_for(db, {"intent": "create_task", "tasks": [{"title": "A"}]})
     with pytest.raises(ValueError):
         prepare_plan_action(db, plan, "x")
-
-
-# ---------------------------------------------------------------- узел графа
 
 
 def node_state(plan: Plan, decision: str = "accept", request: str = "запрос") -> dict[str, Any]:
@@ -366,9 +354,6 @@ def test_node_replies_for_read_order_and_clarification(
     assert f"1. #{a} «Собрать данные»" in order
     clarify = plan_for(db, {"intent": "clarification_required", "missing_fields": ["task_id"]})
     assert "ID" in node(node_state(clarify))["reply"]
-
-
-# ---------------------------------------------------------------- HTTP API
 
 
 @pytest.fixture

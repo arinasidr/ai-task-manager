@@ -8,7 +8,7 @@ from evals.scoring import score_case
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Запуск сценариев A16")
+    parser = argparse.ArgumentParser(description="Запуск сценариев Evals")
     parser.add_argument("--only", nargs="+", help="ID сценариев для выборочного запуска")
     parser.add_argument("--output", type=Path, help="Путь к файлу результатов")
     args = parser.parse_args()

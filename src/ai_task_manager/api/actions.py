@@ -28,7 +28,7 @@ def confirm_action(action_id: str, db: Db) -> dict:
         raise HTTPException(status_code=404, detail="Действие не найдено")
 
     if operation["type"] == AGENT_PLAN:
-        # план, который составили агенты и принял валидатор (P09)
+        # план, который составили агенты и принял валидатор
         try:
             result = confirm_plan_action(action_id)
         except ValueError as exc:

@@ -87,9 +87,6 @@ def check(
     return Validator(llm, model="ministral-3:3b").validate(request, analysis, plan, db, now=NOW)
 
 
-# ---------------------------------------------------------------- семейства моделей
-
-
 @pytest.mark.parametrize(
     ("model", "family"),
     [
@@ -115,9 +112,6 @@ def test_default_settings_use_other_family_for_validator() -> None:
     check_validator_family(s.validator_model, s.analyst_model, s.planner_model, s.fast_model)
 
 
-# ---------------------------------------------------------------- слой 1: код
-
-
 def test_safe_write_plan_passes_code_and_goes_to_llm(db: sqlite3.Connection) -> None:
     analysis = {"intent": "create_task", "tasks": [{"title": "Купить молоко"}]}
     llm = FakeLLM(ACCEPT)
@@ -128,7 +122,7 @@ def test_safe_write_plan_passes_code_and_goes_to_llm(db: sqlite3.Connection) -> 
 
 
 def test_dangerous_plan_is_checked_by_human_not_llm(db: sqlite3.Connection) -> None:
-    # удаление пользователь подтверждает по предварительному плану — модель не нужна
+    # удаление пользователь подтверждает по предварительному плану - модель не нужна
     task = add(db, "Отчёт")
     analysis = {"intent": "delete_task", "task_id": task}
     llm = FakeLLM()
@@ -308,9 +302,6 @@ def test_missing_plan_is_rejected(db: sqlite3.Connection) -> None:
     assert not check(db, {"intent": "get_tasks"}, None).accepted
 
 
-# ---------------------------------------------------------------- когда модель не нужна
-
-
 def test_read_only_and_clarification_plans_skip_llm(db: sqlite3.Connection) -> None:
     llm = FakeLLM()
     read = planned(db, {"intent": "get_tasks"})
@@ -321,13 +312,10 @@ def test_read_only_and_clarification_plans_skip_llm(db: sqlite3.Connection) -> N
 
 
 def test_code_rejection_by_planner_is_a_valid_clarification(db: sqlite3.Connection) -> None:
-    # планировщик сам отказал (задачи нет) и спрашивает — проверять моделью нечего
+    # планировщик сам отказал (задачи нет) и спрашивает - проверять моделью нечего
     analysis = {"intent": "update_task", "task_id": 999, "updates": {"status": "done"}}
     verdict = check(db, analysis, planned(db, analysis), FakeLLM())
     assert verdict.accepted
-
-
-# ---------------------------------------------------------------- слой 2: LLM
 
 
 def test_llm_reject_returns_reasons_for_planner(db: sqlite3.Connection) -> None:
@@ -348,7 +336,7 @@ def test_llm_reject_returns_reasons_for_planner(db: sqlite3.Connection) -> None:
     assert sent["user"]["request"] == "Перенеси #1 на 16-е"
     assert "verified_by_code" not in sent["user"]  # «16-е» код не распознаёт, дату судит модель
     assert sent["user"]["now"].startswith("2026-10-14")
-    # календарь посчитан кодом: 14.10.2026 — среда
+    # календарь посчитан кодом: 14.10.2026 - среда
     assert sent["user"]["calendar"][:2] == [
         "сегодня: 2026-10-14, среда",
         "завтра: 2026-10-15, четверг",
@@ -454,13 +442,10 @@ def test_system_prompt_has_soul_and_role() -> None:
     assert prompt.startswith("# SOUL - AI Task Manager")
     assert "агент-валидатор" in prompt
     assert "# task-validation" in prompt
-    # конкретная дата вместо «завтра» — норма, это записано в скилле
+    # конкретная дата вместо «завтра» - норма, это записано в скилле
     assert "Конкретная дата в плане" in prompt
     assert "## Примеры ответов пользователю" not in prompt
     assert "```json" not in prompt
-
-
-# ---------------------------------------------------------------- узел графа
 
 
 def test_validator_node_in_graph(db_path: Path, db: sqlite3.Connection) -> None:
@@ -517,9 +502,6 @@ def test_validator_node_refuses_same_family(db_path: Path) -> None:
                 "validator_model": "gemma3:4b",
             }
         )
-
-
-# ---------------------------------------------------------------- относительные даты
 
 
 @pytest.mark.parametrize(
@@ -603,7 +585,7 @@ def test_date_complaint_with_other_code_is_overruled(db: sqlite3.Connection) -> 
 
 
 def test_wrong_weekday_is_caught_by_code(db: sqlite3.Connection) -> None:
-    # «в пятницу», а аналитик поставил субботу — код отклоняет без вызова модели
+    # «в пятницу», а аналитик поставил субботу - код отклоняет без вызова модели
     analysis = {"intent": "create_task", "tasks": [{"title": "Отчёт", "deadline": "2026-10-17"}]}
     llm = FakeLLM()
     verdict = check(db, analysis, planned(db, analysis), llm, request="Сдать отчёт в пятницу")
@@ -613,7 +595,7 @@ def test_wrong_weekday_is_caught_by_code(db: sqlite3.Connection) -> None:
 
 
 def test_same_weekday_allows_today_and_next_week(db: sqlite3.Connection) -> None:
-    # NOW — среда: «в среду» может значить и сегодня, и через неделю
+    # NOW - среда: «в среду» может значить и сегодня, и через неделю
     for deadline in ("2026-10-14", "2026-10-21"):
         analysis = {"intent": "create_task", "tasks": [{"title": "Созвон", "deadline": deadline}]}
         llm = FakeLLM({"decision": "accept", "issues": []})

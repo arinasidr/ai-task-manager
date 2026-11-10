@@ -1,7 +1,7 @@
-# Изолированное окружение: Docker Sandboxes (P13)
+# Изолированное окружение: Docker Sandboxes
 
 Приложение (FastAPI + LangGraph + Tools + SQLite) работает внутри microVM Docker Sandboxes.
-Ollama остаётся на хосте, потому что ей нужна видеокарта. Почему выбран этот вариант — P06.
+Ollama остаётся на хосте, потому что ей нужна видеокарта. Почему выбран этот вариант, написано в отчёте (раздел про изоляцию).
 
 ```
 Хост (Windows 11, ASUS)
@@ -73,4 +73,4 @@ API на `localhost:8000`).
 | `sbx exec -u atm …` — «user atm not found» | `sbx exec -u` знает только пользователей шаблона; скрипты заходят root и сбрасывают права через `runuser -u atm` |
 | `apt-get update` в песочнице — 403 на `download.docker.com`, `cli.github.com` | репозитории шаблона закрыты политикой — так и должно быть; Ubuntu при этом обновляется |
 | `sbx` не запускается | `sbx diagnose`; проверить, что Windows Hypervisor Platform включена |
-| Docker Sandboxes не работает совсем | запасной вариант из P06: Docker Engine в WSL2 + gVisor (`runsc`) |
+| Docker Sandboxes не работает совсем | запасной вариант: Docker Engine в WSL2 + gVisor (`runsc`) |

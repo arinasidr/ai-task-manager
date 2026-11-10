@@ -22,11 +22,7 @@ def _percentile(values: list[float], share: float) -> float | None:
 
 
 def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
-    """Считает метрики по записям из responses.jsonl.
-
-    Записи с ошибкой движка (таймаут, сервер недоступен) входят в точность как непройденные,
-    но не входят в метрики скорости.
-    """
+    """Считает метрики по записям из responses.jsonl."""
     total = len(records)
     if not total:
         return {"runs": 0}
